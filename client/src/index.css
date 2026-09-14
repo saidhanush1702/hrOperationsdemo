@@ -5,15 +5,17 @@
     /* =========================================
        1. TYPOGRAPHY
        ========================================= */
-    --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    
+    --font-primary: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-display: "Sora", "Manrope", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
     /* Font Sizes */
-    --text-xs: 0.75rem;   /* 12px */
-    --text-sm: 0.875rem;  /* 14px */
-    --text-base: 1rem;    /* 16px */
-    --text-lg: 1.125rem;  /* 18px */
-    --text-xl: 1.25rem;   /* 20px */
-    --text-2xl: 1.5rem;   /* 24px */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
 
     /* Font Weights */
     --font-light: 300;
@@ -30,85 +32,95 @@
     --z-tooltip: 200;
 
     /* =========================================
-       3. SHADOWS & RADIUSES
+       3. SHAPE & DEPTH
        ========================================= */
-    /* Border Radiuses */
     --radius-sharp: 0px;
-    --radius-sm: 0.25rem;   /* 4px - Subtle rounding */
-    --radius-md: 0.5rem;    /* 8px - Standard inputs/buttons */
-    --radius-lg: 1rem;      /* 16px - Cards/Modals */
-    --radius-pill: 9999px;  /* Fully rounded buttons/badges */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 22px;
+    --radius-pill: 9999px;
 
-    /* Box Shadows */
-    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-subtle: 0 1px 2px rgba(21, 18, 46, 0.06), 0 0 0 1px rgba(109, 74, 255, 0.03);
+    --shadow-elevated: 0 14px 34px -20px rgba(46, 24, 140, 0.30), 0 2px 6px -2px rgba(21, 18, 46, 0.06);
+    --shadow-floating: 0 40px 80px -32px rgba(46, 24, 140, 0.45), 0 12px 24px -12px rgba(21, 18, 46, 0.16);
 
     /* =========================================
-       4. COLOR PALETTES (Light Mode / Base)
+       4. COLOR — "Nebula" light (Frost)
        ========================================= */
-       
-    /* A. Brand Colors (Static across modes) */
-    --brand-primary: #3B82F6;       /* A modern, accessible blue */
-    --brand-primary-text: #FFFFFF;  /* White text for high contrast on blue */
+    --brand-primary: #6D4AFF;
+    --brand-secondary: #0891B2;
+    --brand-primary-text: #FFFFFF;
+    --brand-glow: rgba(109, 74, 255, 0.38);
+    --brand-gradient: linear-gradient(120deg, #6D4AFF 0%, #9D4DFF 48%, #0EA5E9 100%);
 
-    /* B. Semantic Colors (Success, Error, Warning, Info) */
-    --semantic-success: #10B981; /* Green */
-    --semantic-error: #EF4444;   /* Red */
-    --semantic-warning: #F59E0B; /* Yellow */
-    --semantic-info: #3B82F6;    /* Blue */
+    --semantic-success: #10B981;
+    --semantic-error: #F43F5E;
+    --semantic-warning: #F59E0B;
+    --semantic-info: #0EA5E9;
 
-    /* C. Neutral Colors / Backgrounds */
-    --bg-app: #F7F8FC;         /* A cooler, lighter app background */
-    --bg-sidebar: #FFFFFF;     /* White sidebar/header for a cleaner look */
-    --bg-surface: #FFFFFF;     /* Cards and Modals background */
-    
-    --text-main: #1F2937;    
-    --text-muted: #6B7280;   
-    
-    --border-subtle: #E5E7EB;  /* A neutral, subtle gray border */
+    --bg-app: #EFEEF8;
+    --bg-sidebar: rgba(255, 255, 255, 0.72);
+    --bg-surface: #FFFFFF;
 
-    /* D. Component Specific Colors */
-    --input-bg: #FFFFFF;          
-    --input-text: #1F2937;        
-    --input-placeholder: #9CA3AF; 
-    
-    --icon-bg: #FDF4EA;
-    --icon-color: #D97706;
+    --text-main: #15122E;
+    --text-muted: #6A6789;
+
+    --border-subtle: #E2DFF2;
+
+    --input-bg: #FAF9FF;
+    --input-text: #15122E;
+    --input-placeholder: #A09DBE;
+
+    --icon-bg: #EEE9FF;
+    --icon-color: #6D4AFF;
+
+    --aurora-1: rgba(109, 74, 255, 0.16);
+    --aurora-2: rgba(14, 165, 233, 0.13);
+    --aurora-3: rgba(236, 72, 153, 0.08);
+    --grid-line: rgba(21, 18, 46, 0.045);
   }
 
   /* =========================================
-     DARK MODE OVERRIDES
+     DARK MODE — "Nebula" night (Obsidian)
      ========================================= */
   .dark {
-    /* Neutral Colors / Backgrounds */
-    --bg-app: #121212;       
-    --bg-sidebar: #1A1A1A;   
-    --bg-surface: #262626;   
-    
-    --text-main: #F9FAFB;    
-    --text-muted: #9CA3AF;   
-    
-    --border-subtle: #333333;
+    --brand-primary: #8B7BFF;
+    --brand-secondary: #22D3EE;
+    --brand-glow: rgba(139, 123, 255, 0.45);
+    --brand-gradient: linear-gradient(120deg, #7C5CFF 0%, #B14DFF 48%, #22D3EE 100%);
 
-    /* Component Specific Colors */
-    --input-bg: #242424;          
-    --input-text: #FFFFFF;        
-    --input-placeholder: #6B7280; 
-    
-    --icon-bg: #3F2C1D;
-    --icon-color: #FBBF24;
+    --bg-app: #060912;
+    --bg-sidebar: rgba(9, 13, 26, 0.74);
+    --bg-surface: #0D1222;
 
-    /* Shadows need to be darker in dark mode to show depth */
-    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-    --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-    --shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+    --text-main: #E7EAF6;
+    --text-muted: #8990AE;
+
+    --border-subtle: #1B2340;
+
+    --input-bg: #0A0F1D;
+    --input-text: #F3F4FB;
+    --input-placeholder: #5E6685;
+
+    --icon-bg: #1A1640;
+    --icon-color: #A99BFF;
+
+    --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(139, 123, 255, 0.04);
+    --shadow-elevated: 0 18px 40px -22px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(139, 123, 255, 0.05);
+    --shadow-floating: 0 40px 90px -30px rgba(0, 0, 0, 0.95), 0 0 40px -20px rgba(139, 123, 255, 0.35);
+
+    --aurora-1: rgba(124, 92, 255, 0.20);
+    --aurora-2: rgba(34, 211, 238, 0.12);
+    --aurora-3: rgba(236, 72, 153, 0.09);
+    --grid-line: rgba(255, 255, 255, 0.035);
   }
 
   body {
     font-family: var(--font-primary);
     background-color: var(--bg-app);
     color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
@@ -192,4 +204,303 @@ input[type="number"] {
     background-color: var(--border-subtle);
     border-radius: 9999px;
   }
+}
+
+/* =============================================================================
+   SHARED MOTION + EFFECTS
+   ============================================================================= */
+@keyframes nx-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+.nx-pop {
+  animation: nx-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top;
+}
+
+@keyframes nx-shimmer {
+  to { background-position: -200% 0; }
+}
+.nx-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-muted) 12%, transparent) 0%,
+    color-mix(in srgb, var(--brand-primary) 22%, transparent) 50%,
+    color-mix(in srgb, var(--text-muted) 12%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: nx-shimmer 1.4s linear infinite;
+}
+
+.nx-gradient-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes nx-fade { from { opacity: 0; } }
+@keyframes nx-drawer-in {
+  from { transform: translateX(56px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.nx-drawer-scrim {
+  background:
+    radial-gradient(circle at 18% 50%, rgba(109, 74, 255, 0.18), transparent 60%),
+    rgba(3, 5, 14, 0.62);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  animation: nx-fade 0.25s ease both;
+}
+.nx-drawer {
+  animation: nx-drawer-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: -40px 0 90px -30px rgba(20, 10, 60, 0.55);
+}
+.nx-drawer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, var(--brand-primary), var(--brand-secondary), transparent);
+}
+
+@keyframes nx-spin { to { transform: rotate(360deg); } }
+.nx-spin-slow { animation: nx-spin 32s linear infinite; }
+.nx-spin-rev  { animation: nx-spin 46s linear infinite reverse; }
+
+/* =============================================================================
+   NEBULA SHELL — design-language overrides for the signed-in app.
+   Scoped to html.nx-shell, which Layout sets while mounted, so the landing and
+   login pages (which style themselves) are untouched. Deliberately unlayered:
+   these rules have to win over the Tailwind utilities the pages hard-code.
+   ============================================================================= */
+
+.nx-canvas {
+  background:
+    radial-gradient(1100px 620px at 6% -12%, var(--aurora-1), transparent 62%),
+    radial-gradient(900px 540px at 104% -6%, var(--aurora-2), transparent 58%),
+    radial-gradient(760px 520px at 60% 118%, var(--aurora-3), transparent 62%),
+    var(--bg-app);
+}
+.nx-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, #000 30%, transparent 78%);
+}
+
+html.nx-shell ::selection {
+  background: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+}
+
+html.nx-shell * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand-primary) 35%, transparent) transparent;
+}
+
+/* ---- Typography: sentence case, open tracking, readable micro-labels ---- */
+html.nx-shell .uppercase:not(.font-mono) { text-transform: none; }
+html.nx-shell .italic { font-style: normal; }
+html.nx-shell .tracking-widest,
+html.nx-shell .tracking-wider { letter-spacing: 0.005em; }
+html.nx-shell .tracking-tight,
+html.nx-shell .tracking-tighter { letter-spacing: -0.015em; }
+html.nx-shell .font-bold { font-weight: 650; }
+html.nx-shell .text-\[8px\]  { font-size: 10px; }
+html.nx-shell .text-\[9px\]  { font-size: 11px; }
+html.nx-shell .text-\[10px\] { font-size: 11.5px; }
+html.nx-shell .text-\[11px\] { font-size: 12px; }
+@media (min-width: 40rem) {
+  html.nx-shell .sm\:text-\[10px\] { font-size: 11.5px; }
+  html.nx-shell .sm\:text-\[11px\] { font-size: 12px; }
+}
+html.nx-shell :is(h1, h2, h3) {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+html.nx-shell :is(.font-mono, .tabular-nums) { font-family: var(--font-mono); }
+
+/* ---- Shape language: chamfered panels, pill controls ---- */
+html.nx-shell :is(.rounded-2xl, .rounded-3xl) { border-radius: 22px 8px 22px 8px; }
+html.nx-shell div.rounded-xl { border-radius: 14px 5px 14px 5px; }
+html.nx-shell div.rounded-xl:has(> button),
+html.nx-shell div.rounded-lg:has(> button) { border-radius: 9999px; }
+html.nx-shell :is(button, a, label).rounded-xl,
+html.nx-shell :is(button, a, label).rounded-lg,
+html.nx-shell :is(button, a, label).rounded-md { border-radius: 9999px; }
+html.nx-shell :is(input, select, textarea):is(.rounded-xl, .rounded-lg, .rounded-md, .rounded) { border-radius: 9px; }
+html.nx-shell span:is(.rounded, .rounded-md) { border-radius: 9999px; }
+
+/* ---- Surfaces ---- */
+html.nx-shell .shadow-sm { box-shadow: var(--shadow-subtle); }
+html.nx-shell :is(.rounded-2xl, .rounded-3xl)[class~="bg-(--bg-surface)"] {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--brand-primary) 4%, transparent), transparent 42%);
+  border-color: color-mix(in srgb, var(--brand-primary) 14%, var(--border-subtle));
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Page header band: the surface card that carries a page's <h1>. */
+html.nx-shell .rounded-2xl:has(> div > div > h1) {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(115deg,
+      color-mix(in srgb, var(--brand-primary) 15%, var(--bg-surface)) 0%,
+      var(--bg-surface) 52%,
+      color-mix(in srgb, var(--brand-secondary) 11%, var(--bg-surface)) 100%);
+}
+html.nx-shell .rounded-2xl:has(> div > div > h1)::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--brand-gradient);
+  opacity: 0.55;
+  pointer-events: none;
+}
+html.nx-shell .rounded-2xl:has(> div > div > h1) > div:first-child > div:first-child:not(:has(h1)) {
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 10px 26px -10px var(--brand-glow);
+}
+html.nx-shell h1.text-base { font-size: 1.3rem; line-height: 1.2; }
+
+/* ---- Primary actions glow ---- */
+html.nx-shell [class~="bg-(--brand-primary)"] {
+  background-image: var(--brand-gradient);
+  border-color: transparent;
+  box-shadow: 0 8px 22px -10px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+html.nx-shell [class~="hover:bg-(--brand-primary)"]:hover {
+  background-image: var(--brand-gradient);
+  border-color: transparent;
+}
+
+/* ---- Data tables ---- */
+html.nx-shell thead {
+  background-color: color-mix(in srgb, var(--brand-primary) 6%, var(--bg-surface));
+}
+html.nx-shell thead tr {
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--brand-primary) 28%, transparent);
+}
+html.nx-shell thead th { font-weight: 600; }
+html.nx-shell tbody tr { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+html.nx-shell tbody tr:hover {
+  background-color: color-mix(in srgb, var(--brand-primary) 7%, transparent);
+  box-shadow: inset 3px 0 0 var(--brand-primary);
+}
+
+/* ---- Form controls ---- */
+html.nx-shell :is(input, select, textarea) { font-family: var(--font-primary); }
+html.nx-shell :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+html.nx-shell :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--brand-primary); }
+
+/* ---- Overlays built inside pages ---- */
+html.nx-shell .fixed.inset-0[class*="bg-black"] {
+  background-color: rgba(4, 6, 15, 0.6);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
+/* =============================================================================
+   AUTH SCREENS — dark glass tokens for the login and password-reset flow
+   ============================================================================= */
+.nx-auth {
+  --bg-app: #070914;
+  --bg-surface: rgba(14, 18, 36, 0.66);
+  --text-main: #EEF0FA;
+  --text-muted: #9097B5;
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --brand-primary: #8B7BFF;
+  --brand-secondary: #22D3EE;
+  --brand-primary-text: #FFFFFF;
+  --brand-glow: rgba(139, 123, 255, 0.5);
+  --brand-gradient: linear-gradient(120deg, #7C5CFF 0%, #B14DFF 48%, #22D3EE 100%);
+  --input-bg: rgba(6, 9, 20, 0.72);
+  --input-text: #F3F4FB;
+  --input-placeholder: #5F6787;
+  font-family: var(--font-primary);
+  color-scheme: dark;
+}
+.nx-auth .uppercase:not(.font-mono) { text-transform: none; }
+.nx-auth .italic { font-style: normal; }
+.nx-auth .tracking-widest { letter-spacing: 0.01em; }
+.nx-auth .text-\[10px\] { font-size: 12px; }
+.nx-auth :is(button, input).rounded-xl { border-radius: 14px; }
+.nx-auth [class~="bg-(--brand-primary)"] {
+  background-image: var(--brand-gradient);
+  box-shadow: 0 14px 34px -12px var(--brand-glow);
+}
+.nx-auth input:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 4px rgba(139, 123, 255, 0.18);
+}
+
+.nx-auth-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.nx-auth-bg::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  background:
+    radial-gradient(38% 32% at 22% 30%, rgba(124, 92, 255, 0.38), transparent 70%),
+    radial-gradient(30% 28% at 78% 18%, rgba(34, 211, 238, 0.22), transparent 70%),
+    radial-gradient(34% 30% at 55% 85%, rgba(236, 72, 153, 0.16), transparent 70%);
+  filter: blur(40px);
+  animation: nx-aurora 16s ease-in-out infinite alternate;
+}
+.nx-auth-bg::after {
+  content: "";
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -20%;
+  height: 65%;
+  background-image:
+    linear-gradient(rgba(124, 92, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 92, 255, 0.3) 1px, transparent 1px);
+  background-size: 56px 56px;
+  transform: perspective(600px) rotateX(70deg);
+  transform-origin: center top;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 35%, transparent);
+  opacity: 0.4;
+  animation: nx-grid 10s linear infinite;
+}
+@keyframes nx-aurora { to { transform: translate3d(2%, -3%, 0) scale(1.1) rotate(4deg); } }
+@keyframes nx-grid { to { background-position: 0 56px, 0 0; } }
+.nx-auth-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 40px 90px -40px rgba(124, 92, 255, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-auth-bg::before,
+  .nx-auth-bg::after,
+  .nx-spin-slow,
+  .nx-spin-rev,
+  .nx-drawer,
+  .nx-pop,
+  .nx-shimmer { animation: none; }
 }

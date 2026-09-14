@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Sun, Moon, Menu, Clock, RefreshCw } from 'lucide-react';
-import Sidebar from './Sidebar';
+import CommandBar from './CommandBar';
 import TopProgressBar from '../ui/TopProgressBar';
 import { pulseLoading } from '../../utils/loadingBus';
 import api from '../../api/axios';
@@ -12,15 +11,23 @@ const Layout = ({ children }) => {
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName') || '';
 
-    const [isDark, setIsDark] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isDark, setIsDark] = useState(() => {
+        const savedTheme = localStorage.getItem('theme');
+        return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    });
     const [easternTime, setEasternTime] = useState({ date: '', time: '' });
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
         window.location.reload();
+    }, []);
+
+    // The Nebula design-language overrides in index.css only apply while the
+    // signed-in shell is mounted, so public pages keep their own styling.
+    useEffect(() => {
+        document.documentElement.classList.add('nx-shell');
+        return () => document.documentElement.classList.remove('nx-shell');
     }, []);
 
     useEffect(() => {
@@ -46,12 +53,10 @@ const Layout = ({ children }) => {
     // there is nothing to fetch at all).
     useEffect(() => { pulseLoading(); }, [location.pathname]);
 
+    // Apply the theme resolved in the initial state (saved choice, else system preference).
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            setIsDark(true);
-            document.documentElement.classList.add('dark');
-        }
+        if (isDark) document.documentElement.classList.add('dark');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const toggleTheme = () => {
@@ -70,96 +75,33 @@ const Layout = ({ children }) => {
         try {
             await api.post('/api/auth/logout');
             localStorage.clear();
-            navigate('/');
+            navigate('/login');
         } catch (err) {
             console.error("Logout failed", err);
         }
     };
 
-    const welcomeText = `Welcome, ${userName || userRole?.replace('_', ' ')}`;
-
     return (
-        <div className="flex h-screen w-full bg-(--bg-app) overflow-hidden transition-colors duration-300 relative">
+        <div className="nx-canvas relative flex h-screen w-full flex-col overflow-hidden transition-colors duration-300">
 
             <TopProgressBar />
 
-            <Sidebar
-                isOpen={isSidebarOpen}
-                setIsOpen={setIsSidebarOpen}
-                isMobileOpen={isMobileSidebarOpen}
-                setIsMobileOpen={setIsMobileSidebarOpen}
+            <CommandBar
+                userName={userName}
+                userRole={userRole}
+                easternTime={easternTime}
+                isDark={isDark}
+                onToggleTheme={toggleTheme}
+                isRefreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                onLogout={handleLogout}
             />
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-
-                {/* Fixed Header */}
-                <header className="h-16 shrink-0 bg-(--bg-sidebar) border-b border-(--border-subtle) flex items-center justify-between px-4 lg:px-8 transition-colors duration-300">
-
-                    {/* Left: Hamburger (mobile) + Welcome Text */}
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsMobileSidebarOpen(true)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-(--border-subtle) transition-colors text-(--text-main) outline-none"
-                            title="Open Menu"
-                        >
-                            <Menu size={20} />
-                        </button>
-                        <h2 className="text-sm lg:text-base font-semibold text-(--text-main) tracking-tight truncate">
-                            {welcomeText}
-                        </h2>
-                    </div>
-
-                    {/* Right: Eastern Clock + Theme Toggle + Logout */}
-                    <div className="flex items-center space-x-1 lg:space-x-4">
-
-                        {/* Live Eastern Date & Time */}
-                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-(--border-subtle)/50 border border-(--border-subtle)">
-                            <Clock size={13} className="text-(--text-muted) shrink-0" />
-                            <span className="font-mono text-xs font-bold text-(--text-main) tracking-tight tabular-nums">
-                                {easternTime.date}
-                            </span>
-                            <span className="text-(--border-subtle) text-xs select-none">|</span>
-                            <span className="font-mono text-xs font-bold text-(--text-main) tracking-tight tabular-nums">
-                                {easternTime.time}
-                            </span>
-                            <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">EST</span>
-                        </div>
-
-                        <button
-                            onClick={handleRefresh}
-                            className="flex items-center justify-center p-2 lg:px-3 lg:py-2 text-(--text-muted) hover:text-(--text-main) hover:bg-(--border-subtle) rounded-lg transition-all outline-none"
-                            title="Refresh Page"
-                        >
-                            <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-                        </button>
-
-                        <button
-                            onClick={toggleTheme}
-                            className="flex items-center justify-center p-2 lg:px-3 lg:py-2 text-(--text-muted) hover:text-(--text-main) hover:bg-(--border-subtle) rounded-lg transition-all outline-none"
-                            title="Toggle Light/Dark Mode"
-                        >
-                            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
-
-                        <div className="hidden lg:block w-px h-6 bg-(--border-subtle) mx-2"></div>
-
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center justify-center p-2 lg:px-4 lg:py-2 text-(--text-muted) hover:text-red-500 lg:hover:text-(--text-main) lg:hover:bg-(--border-subtle) rounded-lg transition-all outline-none"
-                            title="Log Out"
-                        >
-                            <LogOut size={18} />
-                            <span className="hidden lg:inline ml-2 text-sm font-medium">Log Out</span>
-                        </button>
-                    </div>
-                </header>
-
-                {/* Scrollable Page Content */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 lg:p-8 bg-(--bg-app) transition-colors duration-300 w-full relative">
-                    {children}
-                </main>
-            </div>
+            {/* Scrollable Page Content — the bar above is exactly 4rem tall, which
+                the pages' full-height layouts (calc(100vh - 4rem)) rely on. */}
+            <main className="relative flex-1 w-full overflow-x-hidden overflow-y-auto p-4 lg:p-8">
+                {children}
+            </main>
         </div>
     );
 };

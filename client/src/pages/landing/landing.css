@@ -1,0 +1,254 @@
+/* =============================================================================
+   LANDING — futuristic 3D marketing page. Every class is prefixed `lp-`.
+   ============================================================================= */
+
+.lp-root {
+  --lp-violet: #7C5CFF;
+  --lp-purple: #B14DFF;
+  --lp-cyan: #22D3EE;
+  --lp-pink: #F472B6;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #04050c;
+  color: #E9ECF8;
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+.lp-display { font-family: var(--font-display); letter-spacing: -0.035em; }
+.lp-mono { font-family: var(--font-mono); }
+
+.lp-gradient-text {
+  background: linear-gradient(100deg, #FFFFFF 0%, #D4CCFF 30%, var(--lp-purple) 60%, var(--lp-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lp-neon-text {
+  background: linear-gradient(100deg, var(--lp-violet), var(--lp-purple) 35%, var(--lp-cyan) 65%, var(--lp-violet));
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: lp-flow 7s linear infinite;
+  filter: drop-shadow(0 0 24px rgba(124, 92, 255, 0.35));
+}
+@keyframes lp-flow { to { background-position: 220% center; } }
+
+/* Cursor spotlight */
+.lp-spotlight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 30%), rgba(124, 92, 255, 0.09), transparent 60%);
+}
+
+.lp-aurora {
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 130vh;
+  pointer-events: none;
+  filter: blur(70px);
+  background:
+    radial-gradient(40% 35% at 18% 28%, rgba(124, 92, 255, 0.38), transparent 70%),
+    radial-gradient(34% 30% at 82% 18%, rgba(34, 211, 238, 0.22), transparent 70%),
+    radial-gradient(30% 30% at 60% 72%, rgba(236, 72, 153, 0.16), transparent 70%);
+  animation: lp-aurora 18s ease-in-out infinite alternate;
+}
+@keyframes lp-aurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(0, -4%, 0) scale(1.08) rotate(3deg); }
+}
+
+.lp-grid-floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -8%;
+  height: 55%;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(124, 92, 255, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 92, 255, 0.35) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(700px) rotateX(68deg);
+  transform-origin: center top;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 55%, transparent);
+  opacity: 0.3;
+  animation: lp-grid 12s linear infinite;
+}
+@keyframes lp-grid { to { background-position: 0 64px, 0 0; } }
+
+.lp-section-glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.55;
+}
+
+/* Glass */
+.lp-glass {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 30px 60px -30px rgba(0, 0, 0, 0.8);
+}
+
+.lp-glow-border { position: relative; isolation: isolate; }
+.lp-glow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.9), rgba(34, 211, 238, 0.25) 40%, transparent 60%, rgba(177, 77, 255, 0.7));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.lp-glow-border:hover::before { opacity: 1; }
+
+/* Buttons */
+.lp-btn-primary {
+  position: relative;
+  background: linear-gradient(110deg, var(--lp-violet), var(--lp-purple) 50%, var(--lp-cyan));
+  background-size: 180% auto;
+  color: #FFFFFF;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 18px 40px -12px rgba(124, 92, 255, 0.65),
+    0 0 32px -6px rgba(34, 211, 238, 0.35);
+  transition: background-position 0.6s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+.lp-btn-primary:hover {
+  background-position: right center;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 24px 50px -12px rgba(124, 92, 255, 0.85),
+    0 0 44px -6px rgba(34, 211, 238, 0.5);
+}
+.lp-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #E9ECF8;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+.lp-btn-ghost:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+  background: rgba(34, 211, 238, 0.07);
+}
+
+/* 3D tilt cards */
+.lp-tilt {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease-out;
+  will-change: transform;
+}
+.lp-tilt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.08), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.lp-tilt:hover::after { opacity: 1; }
+.lp-lift { transform: translateZ(36px); }
+
+/* Scroll reveal */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+  filter: blur(6px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.9s ease;
+  transition-delay: var(--d, 0ms);
+}
+.lp-reveal.is-visible { opacity: 1; transform: none; filter: none; }
+
+/* Float */
+.lp-float { animation: lp-float 7s ease-in-out infinite; }
+.lp-float-slow { animation: lp-float 10s ease-in-out infinite; animation-delay: -3s; }
+.lp-float-late { animation: lp-float 8.5s ease-in-out infinite; animation-delay: -5s; }
+@keyframes lp-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -14px, 0); }
+}
+
+/* Marquee */
+.lp-marquee {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.lp-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: lp-marquee 40s linear infinite;
+}
+@keyframes lp-marquee { to { transform: translateX(-50%); } }
+
+/* Workflow */
+.lp-pipeline-line {
+  background: linear-gradient(90deg, transparent, var(--lp-violet), var(--lp-cyan), var(--lp-purple), transparent);
+  background-size: 200% 100%;
+  animation: lp-flow 5s linear infinite;
+}
+.lp-node {
+  box-shadow: 0 0 0 6px rgba(124, 92, 255, 0.12), 0 0 26px rgba(124, 92, 255, 0.65);
+}
+
+/* Console preview */
+.lp-console {
+  transform: perspective(1600px) rotateX(var(--rx, 24deg)) rotateY(var(--ry, -8deg)) scale(var(--sc, 0.92));
+  transform-origin: center top;
+  transition: transform 0.12s linear;
+}
+.lp-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 40%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.07) 50%, transparent);
+  animation: lp-scan 6s ease-in-out infinite;
+}
+@keyframes lp-scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(260%); }
+}
+.lp-bar { transform-origin: bottom; animation: lp-bar 2.8s ease-in-out infinite alternate; }
+@keyframes lp-bar { from { transform: scaleY(0.55); } to { transform: scaleY(1); } }
+
+.lp-ring {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid rgba(124, 92, 255, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-root *,
+  .lp-root *::before,
+  .lp-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .lp-reveal { opacity: 1; transform: none; filter: none; }
+}

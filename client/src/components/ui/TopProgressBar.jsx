@@ -33,16 +33,19 @@ const TopProgressBar = () => {
     const width = busy ? Math.max(progress, 8) : 100;
 
     return (
-        <div className="fixed top-0 left-0 right-0 h-0.5 z-100 pointer-events-none" aria-hidden="true">
+        <div className="fixed top-0 left-0 right-0 h-[3px] z-100 pointer-events-none" aria-hidden="true">
             <div
-                className="h-full bg-(--brand-primary) transition-all ease-out"
+                className="relative h-full rounded-r-full transition-all ease-out"
                 style={{
                     width: `${width}%`,
                     opacity: busy ? 1 : 0,
                     transitionDuration: busy ? '200ms' : '300ms',
-                    boxShadow: '0 0 8px var(--brand-primary)',
+                    background: 'var(--brand-gradient)',
+                    boxShadow: '0 0 14px var(--brand-glow), 0 0 4px var(--brand-secondary)',
                 }}
-            />
+            >
+                <span className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_10px_4px_var(--brand-glow)]" />
+            </div>
         </div>
     );
 };

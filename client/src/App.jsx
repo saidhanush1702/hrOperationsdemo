@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
+import Landing from './pages/landing/Landing';
 
 // Super Admin
 const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'));
@@ -30,17 +31,20 @@ const EmployeePlacements  = lazy(() => import('./pages/portal/placements/Employe
 
 const PageLoader = () => (
     <div className="flex items-center justify-center flex-1 h-full min-h-75">
-        <div className="flex flex-col items-center gap-3">
-            <div className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }} />
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Loading…</p>
+        <div className="flex flex-col items-center gap-4">
+            <div className="relative h-10 w-10">
+                <div className="absolute inset-0 rounded-full opacity-25" style={{ border: '2px solid var(--brand-primary)' }} />
+                <div className="absolute inset-0 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: 'var(--brand-primary)', borderRightColor: 'var(--brand-secondary)' }} />
+            </div>
+            <p className="font-mono text-[11px] tracking-[0.25em]" style={{ color: 'var(--text-muted)' }}>LOADING</p>
         </div>
     </div>
 );
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const role = localStorage.getItem('userRole');
-    if (!role) return <Navigate to="/" replace />;
-    if (allowedRoles && !allowedRoles.includes(role)) return <Navigate to="/" replace />;
+    if (!role) return <Navigate to="/login" replace />;
+    if (allowedRoles && !allowedRoles.includes(role)) return <Navigate to="/login" replace />;
     return children;
 };
 
@@ -58,7 +62,8 @@ function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Login />} />
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
 
                 {/* Super Admin */}
                 <Route path="/super-admin/dashboard"     element={route(SuperAdminDashboard, ['SUPER_ADMIN'])} />

@@ -13,14 +13,18 @@
 const TableSkeleton = ({ rows = 8, columns }) => (
     <>
         {Array.from({ length: rows }).map((_, r) => (
-            <tr key={r} className="animate-pulse">
+            <tr key={r}>
                 {columns.map((col, c) => {
                     const lines = Array.isArray(col.lines) ? col.lines : [col.lines];
                     return (
                         <td key={c} className={`px-4 py-3.5 ${col.className || ''}`}>
-                            <div className={`space-y-1.5 ${col.align === 'right' ? 'flex flex-col items-end' : ''}`}>
+                            <div className={`space-y-2 ${col.align === 'right' ? 'flex flex-col items-end' : ''}`}>
                                 {lines.map((w, i) => (
-                                    <div key={i} className="h-2.5 rounded bg-(--text-muted)/15" style={{ width: w }} />
+                                    <div
+                                        key={i}
+                                        className="nx-shimmer h-2.5 rounded-full"
+                                        style={{ width: w, animationDelay: `${(r * 60) + (c * 40)}ms` }}
+                                    />
                                 ))}
                             </div>
                         </td>

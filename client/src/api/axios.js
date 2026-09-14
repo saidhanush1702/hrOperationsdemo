@@ -40,9 +40,9 @@ api.interceptors.response.use(
             localStorage.removeItem('userRole');
             localStorage.removeItem('userName');
             
-            // Redirect to login if not already there
-            if (window.location.pathname !== '/') {
-                window.location.href = '/';
+            // Redirect to login unless already on a public page (landing or login)
+            if (!['/', '/login'].includes(window.location.pathname)) {
+                window.location.href = '/login';
             }
         }
         return Promise.reject(error);
