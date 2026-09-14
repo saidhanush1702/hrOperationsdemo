@@ -4,18 +4,26 @@ import { parseDateStr } from './dateUtils.js';
 
 dotenv.config();
 
-// Self Service Portal address shown in every welcome email.
-export const PORTAL_URL = 'https://ops.molinatek.com/';
+// Product name shown in email headers, subjects and footers.
+export const APP_NAME = process.env.APP_NAME || 'HR Operations';
+// Self Service Portal address shown in every welcome email (first CLIENT_ORIGIN by default).
+export const PORTAL_URL = process.env.PORTAL_URL
+    || (process.env.CLIENT_ORIGIN || '').split(',')[0].trim()
+    || 'http://localhost:5173';
 // HR contact shown as plain text (never a mailto link) in welcome emails.
-export const HR_CONTACT_EMAIL = 'HR@molinatek.com';
+export const HR_CONTACT_EMAIL = process.env.SMTP_REPLY_TO_HR || process.env.SMTP_USER;
 
-export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
+const FROM_HR           = process.env.SMTP_FROM_HR || process.env.SMTP_USER;
+const FROM_ACCOUNTS     = process.env.SMTP_FROM_ACCOUNTS || process.env.SMTP_USER;
+const REPLY_TO_HR       = process.env.SMTP_REPLY_TO_HR || FROM_HR;
+const REPLY_TO_ACCOUNTS = process.env.SMTP_REPLY_TO_ACCOUNTS || FROM_ACCOUNTS;
+
+const createTransporter = () => {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
         console.error(" ENV ERROR: SMTP_USER or SMTP_PASS is undefined.");
         throw new Error("SMTP Credentials missing. Check your .env file.");
     }
-
-    const transporter = nodemailer.createTransport({
+    return nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT) || 587,
         secure: false,
@@ -24,18 +32,22 @@ export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
             pass: process.env.SMTP_PASS,
         },
     });
+};
+
+export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
+    const transporter = createTransporter();
 
     const mailOptions = {
-        from: `"Timesheet Team" <${process.env.SMTP_FROM_HR}>`,
-        replyTo: process.env.SMTP_REPLY_TO_HR,
+        from: `"Timesheet Team" <${FROM_HR}>`,
+        replyTo: REPLY_TO_HR,
         to: toEmail,
-        subject: 'Welcome to Molina Technologies LLC – Your Self Service Portal Access',
+        subject: `Welcome to ${APP_NAME} – Your Self Service Portal Access`,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; color: #1f2937; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
 
                 <!-- Header -->
                 <div style="background-color: #4f46e5; padding: 24px 28px;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.3px;">Molina Technologies LLC</h1>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.3px;">${APP_NAME}</h1>
                     <p style="margin: 6px 0 0; color: #c7d2fe; font-size: 13px;">Employee Self Service Portal</p>
                 </div>
 
@@ -43,7 +55,7 @@ export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
                 <div style="padding: 30px 28px;">
 
                     <h2 style="margin: 0 0 20px; color: #4f46e5; font-size: 17px; font-weight: 700;">
-                        Congratulations and Welcome to Molina Technologies LLC Family,
+                        Congratulations and Welcome to ${APP_NAME},
                     </h2>
 
                     <p style="margin: 0 0 14px; font-size: 14px; line-height: 1.75; color: #374151;">
@@ -105,7 +117,7 @@ export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
                 <!-- Footer -->
                 <div style="background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 14px 28px; text-align: center;">
                     <p style="margin: 0; font-size: 12px; color: #9ca3af;">
-                        This is an automated email from Molina Technologies LLC. Please do not reply directly to this email.
+                        This is an automated email from ${APP_NAME}. Please do not reply directly to this email.
                     </p>
                 </div>
             </div>
@@ -123,30 +135,16 @@ export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
 };
 
 export const sendWelcomeEmail = async (toEmail, tempPassword, orgName) => {
-    
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.error(" ENV ERROR: SMTP_USER or SMTP_PASS is undefined.");
-        throw new Error("SMTP Credentials missing. Check your .env file.");
-    }
-
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false, 
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
+    const transporter = createTransporter();
 
     const mailOptions = {
-        from: `"System Administrator" <${process.env.SMTP_FROM_ACCOUNTS}>`,
-        replyTo: process.env.SMTP_REPLY_TO_ACCOUNTS,
+        from: `"System Administrator" <${FROM_ACCOUNTS}>`,
+        replyTo: REPLY_TO_ACCOUNTS,
         to: toEmail,
         subject: `Login Credentials for ${orgName}`,
         html: `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-                <h2 style="color: #4f46e5;">Welcome to the Business Operations Platform by Molinatek !</h2>
+                <h2 style="color: #4f46e5;">Welcome to ${APP_NAME}!</h2>
                 <p>An administrator account has been created for your organization <b>${orgName}</b>.</p>
                 <div style="background: #f3f4f6; padding: 15px; border-radius: 4px; margin: 20px 0;">
                     <p style="margin: 0;"><strong>URL:</strong> <a href="${PORTAL_URL}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${PORTAL_URL}</a></p>
@@ -170,19 +168,11 @@ export const sendWelcomeEmail = async (toEmail, tempPassword, orgName) => {
 };
 
 export const sendPasswordResetEmail = async (toEmail, code) => {
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false, 
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
+    const transporter = createTransporter();
 
     const mailOptions = {
-        from: `"Security Team" <${process.env.SMTP_FROM_HR}>`,
-        replyTo: process.env.SMTP_REPLY_TO_HR,
+        from: `"Security Team" <${FROM_HR}>`,
+        replyTo: REPLY_TO_HR,
         to: toEmail,
         subject: "Your Password Reset Code",
         html: `
@@ -203,15 +193,7 @@ export const sendPasswordResetEmail = async (toEmail, code) => {
 };
 
 export const sendInvoicePastDueReminder = async (clientEmail, clientName, invoiceNumber, amount, dueDate, orgName) => {
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false, 
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
+    const transporter = createTransporter();
 
     const _parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -219,8 +201,8 @@ export const sendInvoicePastDueReminder = async (clientEmail, clientName, invoic
     const formattedDate = `${_parts.find(p => p.type === 'month').value}/${_parts.find(p => p.type === 'day').value}/${_parts.find(p => p.type === 'year').value}`;
 
     const mailOptions = {
-        from: `"${orgName} Billing" <${process.env.SMTP_FROM_ACCOUNTS}>`,
-        replyTo: process.env.SMTP_REPLY_TO_ACCOUNTS,
+        from: `"${orgName} Billing" <${FROM_ACCOUNTS}>`,
+        replyTo: REPLY_TO_ACCOUNTS,
         to: clientEmail,
         subject: `ACTION REQUIRED: Invoice ${invoiceNumber} is Past Due`,
         html: `
@@ -243,12 +225,7 @@ export const sendInvoicePastDueReminder = async (clientEmail, clientName, invoic
 };
 
 export const sendTimesheetReminderEmail = async (toEmail, firstName, orgName, clientName, placementCode, startDate, endDate) => {
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false,
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
+    const transporter = createTransporter();
 
     const fmt = (dateStr) => {
         const d = parseDateStr(dateStr);
@@ -259,8 +236,8 @@ export const sendTimesheetReminderEmail = async (toEmail, firstName, orgName, cl
     };
 
     const mailOptions = {
-        from: `"${orgName} HR Team" <${process.env.SMTP_FROM_HR}>`,
-        replyTo: process.env.SMTP_REPLY_TO_HR,
+        from: `"${orgName} HR Team" <${FROM_HR}>`,
+        replyTo: REPLY_TO_HR,
         to: toEmail,
         subject: `Action Required: Past Due Timesheet for ${clientName}`,
         html: `
@@ -289,22 +266,7 @@ export const sendTimesheetReminderEmail = async (toEmail, firstName, orgName, cl
 };
 
 export const sendCustomInvoiceEmail = async (toEmail, ccEmails, bccEmails, subject, bodyHtml, attachment, invoiceNumber) => {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.error(" ENV ERROR: SMTP_USER or SMTP_PASS is undefined.");
-        throw new Error("SMTP Credentials missing. Check your .env file.");
-    }
-
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
-
-    const senderEmail = process.env.SMTP_FROM_ACCOUNTS || process.env.SMTP_USER;
+    const transporter = createTransporter();
 
     // attachment can be a Buffer (in-memory) or a file path string
     let attachmentEntry = null;
@@ -324,8 +286,8 @@ export const sendCustomInvoiceEmail = async (toEmail, ccEmails, bccEmails, subje
     }</div>`;
 
     const mailOptions = {
-        from: `"Accounts Receivable" <${senderEmail}>`,
-        replyTo: process.env.SMTP_REPLY_TO_ACCOUNTS,
+        from: `"Accounts Receivable" <${FROM_ACCOUNTS}>`,
+        replyTo: REPLY_TO_ACCOUNTS,
         to: toEmail,
         cc: ccEmails || undefined,
         bcc: bccEmails || undefined,

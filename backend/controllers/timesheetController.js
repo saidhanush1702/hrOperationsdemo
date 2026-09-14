@@ -2,15 +2,10 @@ import pool from '../config/db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { PDFDocument } from 'pdf-lib';
 import { logAction } from './auditLogController.js';
-import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import XLSX from 'xlsx';
 import html_to_pdf from 'html-pdf-node';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DOCUMENTS_ROOT = path.join(__dirname, '../uploads/documents');
+import { uploadBuffer } from '../utils/cloudinary.js';
 
 const EXCEL_MIMETYPES = new Set([
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
@@ -24,8 +19,8 @@ const isExcelFile = (file) => {
 
 // Renders every sheet in the workbook as an HTML table, then rasterizes that
 // HTML to a PDF via headless Chrome (same html-pdf-node engine used for invoices).
-const convertExcelToPdfBuffer = async (filePath) => {
-    const workbook = XLSX.readFile(filePath);
+const convertExcelToPdfBuffer = async (fileBuffer) => {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
     const sheetsHtml = workbook.SheetNames.map((sheetName) => {
         const sheet = workbook.Sheets[sheetName];
         const tableHtml = XLSX.utils.sheet_to_html(sheet, { header: '', footer: '' });
@@ -67,23 +62,17 @@ const sanitizeBaseName = (originalname) => {
 };
 
 // --- AUTO FILE-TO-PDF CONVERTER ---
-// Accepts PDF, JPG/PNG, or Excel (XLSX/XLS); always saves a PDF back to disk,
-// under a folder scoped to the timesheet so same-named uploads never collide,
-// using the original uploaded filename (extension swapped to .pdf).
+// Accepts PDF, JPG/PNG, or Excel (XLSX/XLS); always stores a PDF in Cloudinary,
+// under a folder scoped to the timesheet, named after the original upload
+// (extension swapped to .pdf). Returns the stored file's URL.
 const convertToPDF = async (file, timesheetId) => {
     if (!file) return null;
 
-    const destDir = path.join(DOCUMENTS_ROOT, String(timesheetId));
-    await fs.mkdir(destDir, { recursive: true });
-
-    const finalFilename = `${sanitizeBaseName(file.originalname)}.pdf`;
-    const finalPath = path.join(destDir, finalFilename);
-
     let pdfBytes;
     if (file.mimetype === 'application/pdf') {
-        pdfBytes = await fs.readFile(file.path);
+        pdfBytes = file.buffer;
     } else if (file.mimetype.startsWith('image/')) {
-        const imageBytes = await fs.readFile(file.path);
+        const imageBytes = file.buffer;
         const pdfDoc = await PDFDocument.create();
 
         let image;
@@ -99,15 +88,16 @@ const convertToPDF = async (file, timesheetId) => {
         page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
         pdfBytes = await pdfDoc.save();
     } else if (isExcelFile(file)) {
-        pdfBytes = await convertExcelToPdfBuffer(file.path);
+        pdfBytes = await convertExcelToPdfBuffer(file.buffer);
     } else {
         throw new Error("Unsupported file format. Please upload PDF, JPG, PNG, or Excel (XLSX/XLS).");
     }
 
-    await fs.writeFile(finalPath, pdfBytes);
-    await fs.unlink(file.path).catch(err => console.error("Failed to delete original upload:", err));
-
-    return `/uploads/documents/${timesheetId}/${finalFilename}`;
+    return uploadBuffer(Buffer.from(pdfBytes), {
+        folder: `timesheets/${timesheetId}`,
+        fileName: `${sanitizeBaseName(file.originalname)}.pdf`,
+        mimeType: 'application/pdf',
+    });
 };
 
 // --- SAFE DATE FORMATTERS ---

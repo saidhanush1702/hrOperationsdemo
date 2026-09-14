@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { managementAPI, portalAPI } from '../../api/apiService';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+import { resolveFileUrl } from '../../utils/fileUrl';
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
@@ -161,7 +161,7 @@ const Sidebar = ({ isOpen, setIsOpen, isMobileOpen, setIsMobileOpen }) => {
                     `}>
                         {orgLogoUrl ? (
                             <img
-                                src={`${BACKEND_URL}${orgLogoUrl}`}
+                                src={resolveFileUrl(orgLogoUrl)}
                                 alt="Org Logo"
                                 className="h-8 w-8 rounded object-contain flex-shrink-0 bg-white p-0.5"
                             />

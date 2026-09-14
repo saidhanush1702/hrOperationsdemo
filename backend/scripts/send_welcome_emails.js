@@ -21,8 +21,10 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const PORTAL_URL    = 'https://ops.molinatek.com/';
-const TEMP_PASSWORD = 'Molina@1234';
+const APP_NAME         = process.env.APP_NAME || 'HR Operations';
+const PORTAL_URL       = process.env.PORTAL_URL || (process.env.CLIENT_ORIGIN || '').split(',')[0].trim() || 'http://localhost:5173';
+const HR_CONTACT_EMAIL = process.env.SMTP_REPLY_TO_HR || process.env.SMTP_USER;
+const TEMP_PASSWORD    = 'Welcome@1234';
 const DRY_RUN       = process.argv.includes('--dry-run');
 
 // ── Add recipients here: { email, name } ─────────────────────────────────────
@@ -40,14 +42,14 @@ const buildEmailHtml = (toEmail, firstName) => `
     <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; color: #1f2937; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
 
         <div style="background-color: #4f46e5; padding: 24px 28px;">
-            <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.3px;">Molina Technologies LLC</h1>
+            <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.3px;">${APP_NAME}</h1>
             <p style="margin: 6px 0 0; color: #c7d2fe; font-size: 13px;">Employee Self Service Portal</p>
         </div>
 
         <div style="padding: 30px 28px;">
 
             <h2 style="margin: 0 0 20px; color: #4f46e5; font-size: 17px; font-weight: 700;">
-                Congratulations and Welcome to Molina Technologies LLC Family${firstName ? `, ${firstName}` : ''},
+                Congratulations and Welcome to ${APP_NAME}${firstName ? `, ${firstName}` : ''},
             </h2>
 
             <p style="margin: 0 0 14px; font-size: 14px; line-height: 1.75; color: #374151;">
@@ -101,7 +103,7 @@ const buildEmailHtml = (toEmail, firstName) => `
             </div>
 
             <p style="margin: 0 0 28px; font-size: 14px; line-height: 1.75; color: #374151;">
-                Please feel free to email&nbsp;<span style="color: #374151; font-weight: 600;">HR@molinatek.com</span>&nbsp;if you face any issues with portal access.
+                Please feel free to email&nbsp;<span style="color: #374151; font-weight: 600;">${HR_CONTACT_EMAIL}</span>&nbsp;if you face any issues with portal access.
             </p>
 
             <p style="margin: 0; font-size: 14px; color: #374151;">Regards,</p>
@@ -152,7 +154,7 @@ const run = async () => {
                 replyTo: process.env.SMTP_REPLY_TO_HR,
                 to:      emp.email,
                 bcc:     process.env.SMTP_REPLY_TO_ACCOUNTS,
-                subject: 'Welcome to Molina Technologies LLC – Your Self Service Portal Access',
+                subject: `Welcome to ${APP_NAME} – Your Self Service Portal Access`,
                 html:    buildEmailHtml(emp.email, emp.name),
             });
             console.log(`  SENT  ${label}`);

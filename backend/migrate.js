@@ -4,6 +4,9 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 
+import { runSeed } from './db/seeds/001_initial_seed.js';
+import { runSeed2 } from './db/seeds/002_marital_phone_lookups.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -57,6 +60,11 @@ const runMigrations = async () => {
         }
 
         console.log("✅ Migrations complete.");
+
+        console.log("Running seeds...");
+        await runSeed(connection);
+        await runSeed2(connection);
+        console.log("✅ Seeding complete.");
 
     } catch (error) {
         console.error("❌ Migration failed:", error);

@@ -1,9 +1,8 @@
 import pool from '../config/db.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import fs from 'fs/promises';
 import { logAction } from './auditLogController.js';
-import path from 'path';
+import { fileRefExists, readFileRef } from '../utils/cloudinary.js';
 import { generateAndSaveInvoicePDF, buildCombinedPDFBuffer, computeInvoiceLineItems } from '../utils/pdfGenerator.js';
 import { sendCustomInvoiceEmail } from '../utils/mailer.js';
 import { generateInvoicesForOrg } from '../services/invoiceService.js';
@@ -619,22 +618,19 @@ export const downloadInvoicePDF = async (req, res) => {
         let filePath = invoices[0].invoice_file_path;
 
         // Failsafe: Rebuild if it somehow went missing between modal open and click
-        try {
-            await fs.access(filePath);
-        } catch {
+        if (!(await fileRefExists(filePath))) {
             console.log("PDF missing during download request, rebuilding...");
             filePath = await generateAndSaveInvoicePDF(id);
         }
 
-        // Send the physical file from the server disk to the browser
-        res.sendFile(path.resolve(filePath), (err) => {
-            if (err) {
-                console.error("Express SendFile Error:", err);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: "Failed to send PDF to browser" });
-                }
-            }
+        // Send the stored file (Cloudinary URL or legacy disk path) to the browser
+        const pdfBuffer = await readFileRef(filePath);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'inline; filename="Invoice.pdf"',
+            'Content-Length': pdfBuffer.length,
         });
+        res.send(pdfBuffer);
 
     } catch (error) {
         console.error("PDF DOWNLOAD ERROR:", error);
@@ -686,15 +682,8 @@ export const getInvoiceEmailInfo = async (req, res) => {
         const forceRegenerate = req.query.regenerate === 'true';
 
         if (invCheck.length > 0) {
-            if (forceRegenerate || !invCheck[0].invoice_file_path) {
-                fileNeedsGeneration = true;
-            } else {
-                try {
-                    await fs.access(invCheck[0].invoice_file_path);
-                } catch (err) {
-                    fileNeedsGeneration = true;
-                }
-            }
+            fileNeedsGeneration = forceRegenerate
+                || !(await fileRefExists(invCheck[0].invoice_file_path));
         }
 
         if (fileNeedsGeneration) {
@@ -953,17 +942,11 @@ export const sendInvoiceEmail = async (req, res) => {
 
         // Ensure the stored invoice-only PDF exists (used for downloads), but do NOT
         // use it as the email attachment — we build a fresh combined buffer instead.
-        if (!invoice.invoice_file_path) {
+        if (!(await fileRefExists(invoice.invoice_file_path))) {
             await generateAndSaveInvoicePDF(id);
-        } else {
-            try {
-                await fs.access(invoice.invoice_file_path);
-            } catch {
-                await generateAndSaveInvoicePDF(id);
-            }
         }
 
-        // Build invoice + timesheets combined PDF in memory; never stored to disk.
+        // Build invoice + timesheets combined PDF in memory; never stored.
         const combinedBuffer = await buildCombinedPDFBuffer(id);
 
         await sendCustomInvoiceEmail(to, cc, bcc, subject, body, combinedBuffer, invoice.invoice_number);

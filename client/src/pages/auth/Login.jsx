@@ -52,13 +52,11 @@ const Login = () => {
             <div className="grid min-h-screen w-full grid-cols-1 items-center gap-10 px-6 py-12
                             sm:px-10 lg:grid-cols-2 lg:gap-20 lg:px-20">
 
-                    {/* logo — first on mobile, second on desktop */}
+                    {/* brand — first on mobile, second on desktop */}
                     <div className="order-first flex justify-center lg:order-last">
-                        <img
-                            src="/image.png"
-                            alt="Molina Technologies"
-                            className="h-28 w-auto max-w-full object-contain sm:h-40 lg:h-auto lg:max-h-96"
-                        />
+                        <h1 className="text-center text-4xl font-bold tracking-tight text-(--text-main) sm:text-5xl lg:text-6xl">
+                            HR Operations
+                        </h1>
                     </div>
 
                     {/* form */}

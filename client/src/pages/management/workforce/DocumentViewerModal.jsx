@@ -3,7 +3,7 @@ import { Upload, FileText, Trash2, FileSignature } from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { resolveFileUrl } from '../../../utils/fileUrl';
 
 const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
     const [documents, setDocuments] = useState([]);
@@ -122,14 +122,14 @@ const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
                 <div className="flex-1 bg-[#1A1A1A] flex items-center justify-center p-4 relative overflow-hidden">
                     {selectedDoc ? (
                         selectedDoc.file_type.includes('image') ? (
-                            <img src={`${BACKEND_URL}${selectedDoc.file_url}`} alt={selectedDoc.file_name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                            <img src={resolveFileUrl(selectedDoc.file_url)} alt={selectedDoc.file_name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
                         ) : selectedDoc.file_type.includes('pdf') ? (
-                            <iframe src={`${BACKEND_URL}${selectedDoc.file_url}`} className="w-full h-full rounded-lg bg-white" title="PDF Preview"></iframe>
+                            <iframe src={resolveFileUrl(selectedDoc.file_url)} className="w-full h-full rounded-lg bg-white" title="PDF Preview"></iframe>
                         ) : (
                             <div className="text-center">
                                 <FileText size={48} className="mx-auto text-(--text-muted) mb-4" />
                                 <p className="text-white text-sm">Preview not available for this file type.</p>
-                                <a href={`${BACKEND_URL}${selectedDoc.file_url}`} download className="text-(--brand-primary) hover:underline text-xs mt-2 block">Download File</a>
+                                <a href={resolveFileUrl(selectedDoc.file_url)} download className="text-(--brand-primary) hover:underline text-xs mt-2 block">Download File</a>
                             </div>
                         )
                     ) : (

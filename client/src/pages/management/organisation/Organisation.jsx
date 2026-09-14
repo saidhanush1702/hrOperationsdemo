@@ -4,7 +4,7 @@ import { managementAPI } from '../../../api/apiService';
 import AddHRModal from './AddHRModal';
 import AuditLogPanel from '../../../components/layout/AuditLogPanel';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+import { resolveFileUrl } from '../../../utils/fileUrl';
 
 const Organisation = () => {
     const userRole = localStorage.getItem('userRole');
@@ -35,7 +35,7 @@ const Organisation = () => {
                 accounts_email: orgRes.data.accounts_email || '',
                 logo_url: orgRes.data.logo_url || ''
             });
-            if (orgRes.data.logo_url) setLogoPreview(`${BACKEND_URL}${orgRes.data.logo_url}`);
+            if (orgRes.data.logo_url) setLogoPreview(resolveFileUrl(orgRes.data.logo_url));
 
             const teamDataRes = await managementAPI.getOrganizationTeam();
             setTeam(teamDataRes.data);

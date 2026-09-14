@@ -4,7 +4,6 @@ import compression from 'compression';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import pool from './config/db.js';
 import { startTimesheetCronJobs } from './services/timesheetCron.js';
@@ -78,28 +77,10 @@ import multer from 'multer';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure the standard document folder exists
-const uploadDir = path.join(__dirname, 'uploads', 'documents');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Ensure the Organization Logos folder exists
-const logoDir = path.join(__dirname, 'uploads', 'logos');
-if (!fs.existsSync(logoDir)) {
-    fs.mkdirSync(logoDir, { recursive: true });
-}
-
-// Custom Multer config for Organization Logos
-const logoStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, logoDir),
-    filename: (req, file, cb) => {
-        cb(null, `org_${req.user.orgId}_${Date.now()}${path.extname(file.originalname)}`);
-    }
-});
-
-const uploadLogo = multer({ 
-    storage: logoStorage,
+// Organization logos are held in memory and pushed to Cloudinary by the controller.
+// The /uploads and /blob static routes below only serve files stored before that move.
+const uploadLogo = multer({
+    storage: multer.memoryStorage(),
     limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -116,7 +97,6 @@ const app = express();
 app.use(compression({ threshold: 1024 }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/blob', express.static(path.join(__dirname, 'blob')));
 const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
     .split(',')
     .map(o => o.trim())

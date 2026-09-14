@@ -6,6 +6,8 @@ import AmountInput from '../../../components/ui/AmountInput';
 import SendEmailModal from './SendEmailModal';
 import { fmtDate, fmtDateTime, getEasternDateString } from '../../../utils/dateUtils';
 
+import { resolveFileUrl } from '../../../utils/fileUrl';
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 const todayISO = () => getEasternDateString();
@@ -364,7 +366,7 @@ const ManageInvoiceModal = ({ invoice, onClose, onRefresh }) => {
                                 <div>
                                     {invoice.org_logo_url && (
                                         <img
-                                            src={`${BACKEND_URL}${invoice.org_logo_url}`}
+                                            src={resolveFileUrl(invoice.org_logo_url)}
                                             alt="Logo"
                                             className="max-h-16 max-w-[200px] object-contain mb-2"
                                         />

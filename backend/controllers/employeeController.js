@@ -3,8 +3,7 @@ import { toPersonName, toTitleText } from '../utils/nameCase.js';
 import { v4 as uuidv4 } from 'uuid';
 import { encryptPassword, decryptPassword } from '../utils/crypto.js';
 import { sendEmployeeWelcomeEmail } from '../utils/mailer.js';
-import fs from 'fs';
-import path from 'path';
+import { uploadBuffer, deleteFileRef } from '../utils/cloudinary.js';
 import { logAction } from './auditLogController.js';
 
 export const addEmployee = async (req, res) => {
@@ -448,7 +447,11 @@ export const uploadEmployeeDocument = async (req, res) => {
     if (!file) return res.status(400).json({ message: "No file uploaded" });
 
     try {
-        const fileUrl = `/uploads/documents/${file.filename}`;
+        const fileUrl = await uploadBuffer(file.buffer, {
+            folder: `documents/${empId}`,
+            fileName: file.originalname,
+            mimeType: file.mimetype,
+        });
         const docId = uuidv4();
 
         await pool.query(
@@ -483,11 +486,8 @@ export const deleteEmployeeDocument = async (req, res) => {
     try {
         const [docs] = await pool.query('SELECT file_url FROM employee_documents WHERE id = ?', [docId]);
         if (docs.length > 0) {
-            // Remove from local filesystem
-            const filePath = path.join(process.cwd(), docs[0].file_url);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
+            // Remove the stored file (Cloudinary, or local disk for older uploads)
+            await deleteFileRef(docs[0].file_url).catch(err => console.error("Failed to delete stored document:", err.message));
             // Remove from DB
             await pool.query('DELETE FROM employee_documents WHERE id = ?', [docId]);
         }

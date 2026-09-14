@@ -2,6 +2,7 @@ import pool from '../config/db.js';
 import { toPersonName } from '../utils/nameCase.js';
 import { v4 as uuidv4 } from 'uuid';
 import { sendWelcomeEmail } from '../utils/mailer.js';
+import { uploadBuffer } from '../utils/cloudinary.js';
 import { orgSchema } from '../utils/validators.js';
 import { encryptPassword, decryptPassword } from '../utils/crypto.js';
 import { logAction } from './auditLogController.js';
@@ -160,10 +161,13 @@ export const updateOrganizationDetails = async (req, res) => {
         let query = 'UPDATE organizations SET accounts_email = ?';
         let params = [accounts_email || null];
 
-        // If a logo file was uploaded, process it
+        // If a logo file was uploaded, store it in Cloudinary and save its URL
         if (req.file) {
-            // Save the relative path so the frontend can display it easily
-            logo_url = `/uploads/logos/${req.file.filename}`;
+            logo_url = await uploadBuffer(req.file.buffer, {
+                folder: 'logos',
+                fileName: `org_${req.user.orgId}_${req.file.originalname}`,
+                mimeType: req.file.mimetype,
+            });
             query += ', logo_url = ?';
             params.push(logo_url);
         }
