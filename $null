@@ -1,0 +1,7 @@
+﻿wsl : mysql: [Warning] Using a password on the command line interface can be insecure.
+At line:1 char:302
++ ... tch {} } }; wsl -d Ubuntu -u root -- mysql -h 127.0.0.1 -u root -p123 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (mysql: [Warning...an be insecure.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

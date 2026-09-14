@@ -1,0 +1,3 @@
+ALTER TABLE invoice_settings 
+ADD COLUMN custom_notes_1 VARCHAR(250) DEFAULT NULL,
+ADD COLUMN custom_notes_2 VARCHAR(250) DEFAULT NULL;

@@ -1,0 +1,2 @@
+-- Migration 031: Add ACCOUNTANT role to users table
+ALTER TABLE users MODIFY COLUMN role ENUM('SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'ACCOUNTANT', 'EMPLOYEE') NOT NULL;

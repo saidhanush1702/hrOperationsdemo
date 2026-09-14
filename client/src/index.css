@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* =========================================
+       1. TYPOGRAPHY
+       ========================================= */
+    --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    /* Font Sizes */
+    --text-xs: 0.75rem;   /* 12px */
+    --text-sm: 0.875rem;  /* 14px */
+    --text-base: 1rem;    /* 16px */
+    --text-lg: 1.125rem;  /* 18px */
+    --text-xl: 1.25rem;   /* 20px */
+    --text-2xl: 1.5rem;   /* 24px */
+
+    /* Font Weights */
+    --font-light: 300;
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-bold: 700;
+
+    /* =========================================
+       2. Z-INDEX HIERARCHY
+       ========================================= */
+    --z-base: 1;
+    --z-header: 50;
+    --z-modal: 100;
+    --z-tooltip: 200;
+
+    /* =========================================
+       3. SHADOWS & RADIUSES
+       ========================================= */
+    /* Border Radiuses */
+    --radius-sharp: 0px;
+    --radius-sm: 0.25rem;   /* 4px - Subtle rounding */
+    --radius-md: 0.5rem;    /* 8px - Standard inputs/buttons */
+    --radius-lg: 1rem;      /* 16px - Cards/Modals */
+    --radius-pill: 9999px;  /* Fully rounded buttons/badges */
+
+    /* Box Shadows */
+    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* =========================================
+       4. COLOR PALETTES (Light Mode / Base)
+       ========================================= */
+       
+    /* A. Brand Colors (Static across modes) */
+    --brand-primary: #3B82F6;       /* A modern, accessible blue */
+    --brand-primary-text: #FFFFFF;  /* White text for high contrast on blue */
+
+    /* B. Semantic Colors (Success, Error, Warning, Info) */
+    --semantic-success: #10B981; /* Green */
+    --semantic-error: #EF4444;   /* Red */
+    --semantic-warning: #F59E0B; /* Yellow */
+    --semantic-info: #3B82F6;    /* Blue */
+
+    /* C. Neutral Colors / Backgrounds */
+    --bg-app: #F7F8FC;         /* A cooler, lighter app background */
+    --bg-sidebar: #FFFFFF;     /* White sidebar/header for a cleaner look */
+    --bg-surface: #FFFFFF;     /* Cards and Modals background */
+    
+    --text-main: #1F2937;    
+    --text-muted: #6B7280;   
+    
+    --border-subtle: #E5E7EB;  /* A neutral, subtle gray border */
+
+    /* D. Component Specific Colors */
+    --input-bg: #FFFFFF;          
+    --input-text: #1F2937;        
+    --input-placeholder: #9CA3AF; 
+    
+    --icon-bg: #FDF4EA;
+    --icon-color: #D97706;
+  }
+
+  /* =========================================
+     DARK MODE OVERRIDES
+     ========================================= */
+  .dark {
+    /* Neutral Colors / Backgrounds */
+    --bg-app: #121212;       
+    --bg-sidebar: #1A1A1A;   
+    --bg-surface: #262626;   
+    
+    --text-main: #F9FAFB;    
+    --text-muted: #9CA3AF;   
+    
+    --border-subtle: #333333;
+
+    /* Component Specific Colors */
+    --input-bg: #242424;          
+    --input-text: #FFFFFF;        
+    --input-placeholder: #6B7280; 
+    
+    --icon-bg: #3F2C1D;
+    --icon-color: #FBBF24;
+
+    /* Shadows need to be darker in dark mode to show depth */
+    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+    --shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+  }
+
+  body {
+    font-family: var(--font-primary);
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Hide number input arrows for Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide number input arrows for Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Native date/time pickers render their calendar icon and dropdown from the
+   browser's color-scheme, not our CSS variables — without this the icon is
+   black on a dark field in dark mode. */
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="month"],
+.dark input[type="time"] {
+  color-scheme: dark;
+}
+
+/* =============================================================================
+   ENTER ANIMATION UTILITIES  (replaces tailwindcss-animate)
+   Usage: animate-in + fade-in / zoom-in-95 / slide-in-from-* + duration-*
+   ============================================================================= */
+@keyframes tw-enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform:
+      translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+      scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1));
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation-name: tw-enter;
+    animation-duration: var(--tw-animate-duration, 300ms);
+    animation-fill-mode: both;
+  }
+  .fade-in            { --tw-enter-opacity: 0; }
+  .zoom-in-95         { --tw-enter-scale: .95; }
+  .zoom-in            { --tw-enter-scale: .95; }
+  .slide-in-from-left { --tw-enter-translate-x: -100%; }
+  .slide-in-from-bottom-2 { --tw-enter-translate-y: .5rem; }
+  .slide-in-from-top-2    { --tw-enter-translate-y: -.5rem; }
+  .slide-in-from-right-4  { --tw-enter-translate-x: 1rem; }
+
+  /* Make duration-* also set --tw-animate-duration so animations respect the same value */
+  .duration-200 { transition-duration: 200ms; --tw-animate-duration: 200ms; }
+  .duration-300 { transition-duration: 300ms; --tw-animate-duration: 300ms; }
+  .duration-500 { transition-duration: 500ms; --tw-animate-duration: 500ms; }
+
+  /* Scrollbar utilities */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--border-subtle);
+    border-radius: 9999px;
+  }
+}

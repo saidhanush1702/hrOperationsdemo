@@ -1,0 +1,3 @@
+ALTER TABLE organizations
+ADD COLUMN accounts_email VARCHAR(255) NULL,
+ADD COLUMN logo_url VARCHAR(255) NULL;

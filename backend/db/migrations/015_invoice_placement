@@ -1,0 +1,2 @@
+ALTER TABLE placements MODIFY COLUMN invoice_cycle_id INT NULL DEFAULT NULL;
+UPDATE placements SET invoice_cycle_id = NULL;

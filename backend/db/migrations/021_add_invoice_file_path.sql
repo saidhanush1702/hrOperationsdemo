@@ -1,0 +1,2 @@
+ALTER TABLE invoices 
+ADD COLUMN invoice_file_path VARCHAR(255) DEFAULT NULL;
