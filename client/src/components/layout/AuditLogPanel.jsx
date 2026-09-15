@@ -1,38 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ClipboardList, ChevronDown, ChevronUp, RefreshCw, Loader2, User, Clock } from 'lucide-react';
+import { History, ChevronDown, RefreshCw, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { managementAPI } from '../../api/apiService';
 import { fmtDateTime } from '../../utils/dateUtils';
+import { roleLabel } from '../../utils/constants';
+import { Avatar, Chip, cx } from '../ui/kit';
 
-const ROLE_COLORS = {
-    ORG_ADMIN: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-    HR:        'bg-blue-500/10   text-blue-600   border-blue-500/20',
-    EMPLOYEE:  'bg-green-500/10  text-green-600  border-green-500/20',
+// Tone per action verb (first word of the logged action).
+const ACTION_TONES = {
+    Added: 'green', Created: 'green', Generated: 'sky', Updated: 'amber', Ran: 'amber',
+    Submitted: 'amber', Approved: 'green', Enabled: 'green', Rejected: 'rose', Deleted: 'rose',
+    Removed: 'rose', Disabled: 'rose', Terminated: 'rose', Sent: 'cyan',
 };
+const DOT = { green: 'bg-emerald-500', sky: 'bg-sky-500', amber: 'bg-amber-500', rose: 'bg-rose-500', cyan: 'bg-cyan-500', slate: 'bg-(--text-muted)' };
 
-const ACTION_COLORS = {
-    Added:     'bg-green-500/10  text-green-700  border-green-500/20',
-    Created:   'bg-green-500/10  text-green-700  border-green-500/20',
-    Generated: 'bg-blue-500/10   text-blue-700   border-blue-500/20',
-    Updated:   'bg-amber-500/10  text-amber-700  border-amber-500/20',
-    Ran:       'bg-amber-500/10  text-amber-700  border-amber-500/20',
-    Submitted: 'bg-amber-500/10  text-amber-700  border-amber-500/20',
-    Approved:  'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
-    Enabled:   'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
-    Rejected:  'bg-red-500/10    text-red-700    border-red-500/20',
-    Deleted:   'bg-red-500/10    text-red-700    border-red-500/20',
-    Removed:   'bg-red-500/10    text-red-700    border-red-500/20',
-    Disabled:  'bg-red-500/10    text-red-700    border-red-500/20',
-    Terminated:'bg-red-500/10    text-red-700    border-red-500/20',
-    Sent:      'bg-sky-500/10    text-sky-700    border-sky-500/20',
-};
-
-const actionColor = (action = '') => {
-    const first = action.split(' ')[0];
-    return ACTION_COLORS[first] || 'bg-(--border-subtle) text-(--text-muted) border-(--border-subtle)';
-};
+const toneFor = (action = '') => ACTION_TONES[action.split(' ')[0]] || 'slate';
 
 const PAGE_SIZE = 10;
 
+/** Collapsible activity timeline for one module (workspace admins only). */
 const AuditLogPanel = ({ module }) => {
     const userRole = localStorage.getItem('userRole');
     const [open, setOpen]           = useState(false);
@@ -66,173 +51,91 @@ const AuditLogPanel = ({ module }) => {
     const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
     return (
-        <div className="mt-6 bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm overflow-hidden">
-
-            {/* Header bar */}
+        <section className="mt-6 overflow-hidden rounded-[24px] border border-(--border-subtle) bg-(--bg-surface)">
             <div
                 role="button"
                 tabIndex={0}
                 onClick={() => setOpen(o => !o)}
                 onKeyDown={e => e.key === 'Enter' && setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-(--bg-app)/40 transition-colors cursor-pointer select-none"
+                className="flex w-full cursor-pointer select-none items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-(--text-main)/[0.03]"
             >
-                <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-lg bg-(--brand-primary)/10 flex items-center justify-center text-(--brand-primary)">
-                        <ClipboardList size={14} />
-                    </div>
-                    <span className="text-xs font-bold text-(--text-main) uppercase tracking-widest">
-                        Audit Log
+                <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-[12px] text-white" style={{ background: 'var(--brand-gradient)' }}>
+                        <History size={16} />
                     </span>
-                    {total > 0 && open && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-(--brand-primary)/10 text-(--brand-primary) text-[9px] font-bold">
-                            {total}
-                        </span>
-                    )}
+                    <div>
+                        <p className="text-sm font-semibold text-(--text-main)">Activity trail</p>
+                        <p className="text-xs text-(--text-muted)">Who changed what, and when</p>
+                    </div>
+                    {total > 0 && open && <Chip tone="brand">{total} events</Chip>}
                 </div>
                 <div className="flex items-center gap-2">
                     {open && (
                         <button
                             onClick={e => { e.stopPropagation(); setRefreshKey(k => k + 1); }}
-                            className="p-1.5 rounded-lg hover:bg-(--bg-app) transition-colors text-(--text-muted) outline-none"
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-(--border-subtle) text-(--text-muted) outline-none transition-colors hover:text-(--text-main)"
                             title="Refresh"
                         >
                             <RefreshCw size={13} />
                         </button>
                     )}
-                    {open ? <ChevronUp size={15} className="text-(--text-muted)" /> : <ChevronDown size={15} className="text-(--text-muted)" />}
+                    <ChevronDown size={17} className={cx('text-(--text-muted) transition-transform', open && 'rotate-180')} />
                 </div>
             </div>
 
-            {/* Log list */}
             {open && (
-                <div className="border-t border-(--border-subtle)">
+                <div className="border-t border-(--border-subtle) px-5 py-5">
                     {loading ? (
-                        <div className="flex items-center justify-center py-10 gap-2 text-(--text-muted)">
-                            <Loader2 size={16} className="animate-spin text-(--brand-primary)" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Loading audit log…</span>
+                        <div className="flex items-center justify-center gap-2 py-10 text-sm text-(--text-muted)">
+                            <Loader2 size={16} className="animate-spin text-(--brand-primary)" /> Loading activity…
                         </div>
                     ) : logs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10 gap-2 text-(--text-muted)">
-                            <ClipboardList size={24} className="opacity-20" />
-                            <p className="text-[10px] font-bold uppercase tracking-widest">No activity recorded yet.</p>
-                        </div>
+                        <p className="py-10 text-center text-sm text-(--text-muted)">No activity recorded yet.</p>
                     ) : (
                         <>
-                            {/* MOBILE CARD LIST — hidden on sm+ */}
-                            <div className="sm:hidden divide-y divide-(--border-subtle)/60">
-                                {logs.map(log => (
-                                    <div key={log.id} className="px-4 py-2.5">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider border ${actionColor(log.action)}`}>
-                                                {log.action}
-                                            </span>
-                                            <p className="text-[11px] font-bold text-(--text-main) truncate">
-                                                {log.entity_name || log.entity_type}
-                                            </p>
-                                        </div>
-
-                                        {log.description && (
-                                            <p className="text-[10px] text-(--text-muted) leading-snug line-clamp-2 mt-1">
-                                                {log.description}
-                                            </p>
-                                        )}
-
-                                        <div className="flex items-center gap-1.5 mt-1.5 text-[9px] font-bold text-(--text-muted) min-w-0">
-                                            <Clock size={9} className="shrink-0" />
-                                            <span className="shrink-0">{fmtDateTime(log.created_at)}</span>
-                                            <span className="opacity-40 shrink-0">·</span>
-                                            <User size={9} className="shrink-0 text-(--brand-primary)" />
-                                            <span className="truncate">{log.performed_by_name}</span>
-                                            <span className={`shrink-0 text-[8px] font-bold uppercase px-1 py-px rounded border ${ROLE_COLORS[log.performed_by_role] || ROLE_COLORS.EMPLOYEE}`}>
-                                                {log.performed_by_role?.replace('_', ' ')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* DESKTOP TABLE — hidden on mobile */}
-                            <div className="hidden sm:block overflow-x-auto">
-                                <table className="w-full text-xs">
-                                    <thead>
-                                        <tr className="bg-(--bg-app)/50 border-b border-(--border-subtle)">
-                                            {['Timestamp', 'Action', 'Entity', 'Performed By', 'Description'].map(h => (
-                                                <th key={h} className="px-4 py-2.5 text-left text-[9px] font-bold text-(--text-muted) uppercase tracking-widest whitespace-nowrap">
-                                                    {h}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {logs.map((log, i) => (
-                                            <tr
-                                                key={log.id}
-                                                className={`border-b border-(--border-subtle)/60 transition-colors hover:bg-(--bg-app)/30 ${i % 2 === 0 ? '' : 'bg-(--bg-app)/20'}`}
-                                            >
-                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                    <div className="flex items-center gap-1.5 text-(--text-muted)">
-                                                        <Clock size={11} className="shrink-0" />
-                                                        <span className="text-[10px] font-bold">{fmtDateTime(log.created_at)}</span>
-                                                    </div>
-                                                </td>
-
-                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${actionColor(log.action)}`}>
-                                                        {log.action}
-                                                    </span>
-                                                </td>
-
-                                                <td className="px-4 py-3">
-                                                    <p className="font-bold text-(--text-main) text-[10px] truncate max-w-[140px]">
-                                                        {log.entity_name || log.entity_type}
-                                                    </p>
-                                                    {log.entity_name && (
-                                                        <p className="text-[9px] text-(--text-muted) mt-0.5">{log.entity_type}</p>
-                                                    )}
-                                                </td>
-
-                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <div className="h-5 w-5 rounded-full bg-(--brand-primary)/10 flex items-center justify-center shrink-0">
-                                                            <User size={10} className="text-(--brand-primary)" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[10px] font-bold text-(--text-main) truncate max-w-[120px]">{log.performed_by_name}</p>
-                                                            <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${ROLE_COLORS[log.performed_by_role] || ROLE_COLORS.EMPLOYEE}`}>
-                                                                {log.performed_by_role?.replace('_', ' ')}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                <td className="px-4 py-3">
-                                                    <p className="text-[10px] text-(--text-muted) max-w-[260px] leading-relaxed">{log.description || '—'}</p>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ol className="relative space-y-4 pl-6">
+                                <span aria-hidden="true" className="absolute bottom-2 left-[7px] top-2 w-px bg-(--border-subtle)" />
+                                {logs.map(log => {
+                                    const tone = toneFor(log.action);
+                                    return (
+                                        <li key={log.id} className="relative">
+                                            <span className={cx('absolute -left-6 top-3 h-3.5 w-3.5 rounded-full ring-4 ring-(--bg-surface)', DOT[tone])} />
+                                            <div className="rounded-[18px] border border-(--border-subtle) bg-(--bg-app)/40 px-4 py-3">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Chip tone={tone}>{log.action}</Chip>
+                                                    <span className="text-sm font-semibold text-(--text-main)">{log.entity_name || log.entity_type}</span>
+                                                    {log.entity_name && <span className="text-xs text-(--text-muted)">· {log.entity_type}</span>}
+                                                    <span className="ml-auto font-mono text-[11px] text-(--text-muted)">{fmtDateTime(log.created_at)}</span>
+                                                </div>
+                                                {log.description && <p className="mt-1.5 text-xs leading-relaxed text-(--text-muted)">{log.description}</p>}
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <Avatar name={log.performed_by_name || ''} size={22} />
+                                                    <span className="text-xs font-medium text-(--text-main)">{log.performed_by_name}</span>
+                                                    <span className="text-[11px] text-(--text-muted)">{roleLabel(log.performed_by_role)}</span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ol>
 
                             {totalPages > 1 && (
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 border-t border-(--border-subtle) bg-(--bg-app)/30">
-                                    <p className="text-[10px] text-(--text-muted) font-bold">
-                                        Page {currentPage} of {totalPages} &nbsp;·&nbsp; {total} total entries
-                                    </p>
+                                <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs text-(--text-muted)">Page {currentPage} of {totalPages} · {total} events</p>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => fetchLogs(offset - PAGE_SIZE)}
                                             disabled={offset === 0}
-                                            className="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-(--border-subtle) text-(--text-muted) hover:bg-(--bg-app) disabled:opacity-40 disabled:cursor-not-allowed transition-colors outline-none"
+                                            className="flex h-8 items-center gap-1.5 rounded-full border border-(--border-subtle) px-3 text-xs font-semibold text-(--text-muted) outline-none transition-colors hover:text-(--text-main) disabled:cursor-not-allowed disabled:opacity-40"
                                         >
-                                            Previous
+                                            <ArrowLeft size={13} /> Newer
                                         </button>
                                         <button
                                             onClick={() => fetchLogs(offset + PAGE_SIZE)}
                                             disabled={offset + PAGE_SIZE >= total}
-                                            className="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-(--border-subtle) text-(--text-muted) hover:bg-(--bg-app) disabled:opacity-40 disabled:cursor-not-allowed transition-colors outline-none"
+                                            className="flex h-8 items-center gap-1.5 rounded-full border border-(--border-subtle) px-3 text-xs font-semibold text-(--text-muted) outline-none transition-colors hover:text-(--text-main) disabled:cursor-not-allowed disabled:opacity-40"
                                         >
-                                            Next
+                                            Older <ArrowRight size={13} />
                                         </button>
                                     </div>
                                 </div>
@@ -241,7 +144,7 @@ const AuditLogPanel = ({ module }) => {
                     )}
                 </div>
             )}
-        </div>
+        </section>
     );
 };
 

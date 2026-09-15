@@ -29,71 +29,71 @@ const HERO_STATS = [
 ];
 
 const MARQUEE = [
-    'Workforce records', 'Immigration tracking', 'Document vault', 'Client contacts', 'Bill & pay rates',
-    'Timesheet approvals', 'Invoice PDFs', 'Payment tracking', 'Payroll runs', 'C2C ledgers',
-    'Earned vs paid', 'Audit trail', 'Excel exports', 'Employee self-service',
+    'Talent records', 'Work authorization tracking', 'Document vault', 'Partner contacts', 'Bill & pay rates',
+    'Time log approvals', 'Invoice PDFs', 'Payment tracking', 'Pay runs', 'C2C ledgers',
+    'Earned vs paid', 'Activity trail', 'Excel exports', 'Consultant self-service',
 ];
 
 const PILLARS = [
     {
         icon: Layers,
         title: 'One connected record',
-        text: 'Employees, clients, placements and rates live together, so every screen reads from the same data and nothing is re-keyed.',
+        text: 'Consultants, partners, engagements and rates live together, so every screen reads from the same data and nothing is re-keyed.',
     },
     {
         icon: Zap,
         title: 'Hours become cash',
-        text: 'Approved timesheets flow straight into invoices, payroll runs and employee ledgers — the whole cash cycle in one motion.',
+        text: 'Approved time logs flow straight into invoices, pay runs and earnings ledgers — the whole cash cycle in one motion.',
     },
     {
         icon: ShieldCheck,
         title: 'Accountable by design',
-        text: 'Role-based workspaces, secure sessions and a per-module audit trail keep every action visible and every user in their lane.',
+        text: 'Role-based workspaces, secure sessions and a per-module activity trail keep every action visible and every user in their lane.',
     },
 ];
 
 const DASHBOARD_SIGNALS = [
-    { icon: Users,    label: 'Active employees & placements' },
-    { icon: Timer,    label: 'Pending & past-due timesheets' },
-    { icon: FileText, label: 'Invoices ready to send & past due' },
-    { icon: Wallet,   label: 'Total net balance' },
-    { icon: Cake,     label: "Today's birthdays" },
-    { icon: Trophy,   label: 'Work anniversaries' },
-    { icon: Plane,    label: 'Immigration expiring in 180 days' },
+    { icon: Users,    label: 'Active consultants & engagements' },
+    { icon: Timer,    label: 'Time logs to review & overdue' },
+    { icon: FileText, label: 'Invoices ready to send & overdue' },
+    { icon: Wallet,   label: 'Ledger net balance' },
+    { icon: Cake,     label: 'Birthdays today' },
+    { icon: Trophy,   label: 'Work milestones' },
+    { icon: Plane,    label: 'Work authorization expiring in 180 days' },
 ];
 
 const MODULES = [
-    { icon: Users,         tag: 'People',       title: 'Workforce',        text: 'Employee profiles with pay type, origin and employment type, immigration records, a secure document vault, termination and reactivation, and full placement history.' },
-    { icon: Building,      tag: 'Accounts',     title: 'Clients',          text: 'Client accounts with contacts for HR, accounts, timesheets and managers, net terms, and every placement ever made with them.' },
-    { icon: Briefcase,     tag: 'Assignments',  title: 'Placements',       text: 'Connect people to clients with effective-dated bill rates and discounts, pay rates, W2 / C2C / 1099 pay models, billing cycles and payout basis.' },
-    { icon: Clock,         tag: 'Time',         title: 'Timesheets',       text: 'Period generation, employee submission with mandatory client approval, attachments converted to PDF, review, admin override, manual entry and missing-period detection.' },
-    { icon: FileText,      tag: 'Billing',      title: 'Invoices',         text: 'Generate from approved hours, apply additions and deductions, preview the combined invoice + timesheet PDF, email the client and record payments.' },
-    { icon: Settings,      tag: 'Rules',        title: 'Invoice Settings', text: 'Per-placement net terms, pay-when-paid, invoice contacts and custom notes that land on every invoice automatically.' },
-    { icon: Receipt,       tag: 'Pay runs',     title: 'Payroll',          text: 'Build payroll runs from approved time, add line-level adjustments and arrears, refresh against the latest data and submit.' },
-    { icon: Wallet,        tag: 'Ledgers',      title: 'Balance Sheet',    text: 'Per-employee earnings ledgers with C2C postings, manual additions and deductions, repricing previews and W2 payroll runs.' },
-    { icon: Scale,         tag: 'Assurance',    title: 'Reconcile',        text: 'An earned-versus-paid report built from timesheets, payroll and the C2C ledger, so every gap surfaces before it grows.' },
-    { icon: Building2,     tag: 'Control',      title: 'Organisation',     text: 'Brand the workspace with your logo and accounts email, and manage admin, HR and accountant accounts with one-click access control.' },
-    { icon: History,       tag: 'Compliance',   title: 'Audit Trail',      text: 'Creates, updates, approvals and emails are logged per module with who did it and when — right on the page where it happened.' },
-    { icon: CircleUser,    tag: 'Self-service', title: 'Employee Portal',  text: 'Employees follow their placements, submit timesheets with approvals and track their own balance sheet from any device.' },
+    { icon: Users,         tag: 'People',       title: 'Talent',            text: 'Consultant profiles with pay model, origin and consultant type, work authorization records, a secure document vault, offboarding and reactivation, and full engagement history.' },
+    { icon: Building,      tag: 'Accounts',     title: 'Partners',          text: 'Partner companies with contacts for HR, accounts, time logs and managers, payment terms, and every engagement ever made with them.' },
+    { icon: Briefcase,     tag: 'Assignments',  title: 'Engagements',       text: 'Connect consultants to partners with effective-dated bill rates and discounts, pay rates, W2 / C2C / 1099 pay models, billing cycles and payout basis.' },
+    { icon: Clock,         tag: 'Time',         title: 'Time Logs',         text: 'Period generation, consultant submission with mandatory partner approval, attachments converted to PDF, review, admin override, manual entry and missing-period detection.' },
+    { icon: FileText,      tag: 'Invoices',     title: 'Billing',           text: 'Generate from approved hours, apply additions and deductions, preview the combined invoice + time log PDF, email the partner and record payments.' },
+    { icon: Settings,      tag: 'Rules',        title: 'Billing Rules',     text: 'Per-engagement payment terms, pay-when-paid, invoice recipients and custom notes that land on every invoice automatically.' },
+    { icon: Receipt,       tag: 'Payroll',      title: 'Pay Runs',          text: 'Build pay runs from approved time, add line-level adjustments and catch-up lines, refresh against the latest data and lock them in.' },
+    { icon: Wallet,        tag: 'Ledgers',      title: 'Earnings Ledger',   text: 'Per-consultant earnings ledgers with C2C postings, manual additions and deductions, repricing previews and W2 pay runs.' },
+    { icon: Scale,         tag: 'Assurance',    title: 'Pay Audit',         text: 'An earned-versus-paid audit built from time logs, pay runs and the C2C ledger, so every gap surfaces before it grows.' },
+    { icon: Building2,     tag: 'Control',      title: 'Workspace',         text: 'Brand the workspace with your logo and billing mailbox, and manage workspace admins, talent ops and finance leads with one-click access control.' },
+    { icon: History,       tag: 'Compliance',   title: 'Activity Trail',    text: 'Creates, updates, approvals and emails are logged per module with who did it and when — right on the page where it happened.' },
+    { icon: CircleUser,    tag: 'Self-service', title: 'Consultant Portal', text: 'Consultants follow their engagements, submit time logs with approvals and track their own earnings ledger from any device.' },
 ];
 
 const WORKFLOW = [
-    { step: '01', title: 'Onboard',    text: 'Register the organisation, add admins, HR and accountants, and welcome employees with their credentials.' },
-    { step: '02', title: 'Contract',   text: 'Create clients and placements with bill rates, pay rates and invoice terms.' },
-    { step: '03', title: 'Track time', text: 'Timesheet periods open for each placement and employees log their hours.' },
-    { step: '04', title: 'Approve',    text: 'Review the attached client approval, then approve, reject or override.' },
+    { step: '01', title: 'Onboard',    text: 'Register the workspace, add admins, talent ops and finance leads, and welcome consultants with their credentials.' },
+    { step: '02', title: 'Contract',   text: 'Create partners and engagements with bill rates, pay rates and billing rules.' },
+    { step: '03', title: 'Track time', text: 'Time log periods open for each engagement and consultants log their hours.' },
+    { step: '04', title: 'Approve',    text: 'Review the attached partner approval, then approve, send back or override.' },
     { step: '05', title: 'Invoice',    text: 'Approved hours become invoices, rendered to PDF with approvals attached.' },
-    { step: '06', title: 'Collect',    text: 'Email clients, record payments and keep past-due balances in sight.' },
-    { step: '07', title: 'Pay',        text: 'Run payroll and post C2C ledgers from the very same approved hours.' },
-    { step: '08', title: 'Reconcile',  text: 'Compare earned against paid and close every period with confidence.' },
+    { step: '06', title: 'Collect',    text: 'Email partners, record payments and keep overdue balances in sight.' },
+    { step: '07', title: 'Pay',        text: 'Run pay runs and post C2C ledgers from the very same approved hours.' },
+    { step: '08', title: 'Audit',      text: 'Compare earned against paid and close every period with confidence.' },
 ];
 
 const ROLES = [
-    { icon: Globe,       title: 'Super Admin', text: 'Runs the platform: registers organisations, reviews their admins and switches tenants on or off.', access: ['Platform dashboard', 'Organisations'] },
-    { icon: ShieldCheck, title: 'Org Admin',   text: 'Owns the organisation end to end with every module unlocked.',                                    access: ['Talent modules', 'Invoices & payroll', 'Balance sheet & reconcile', 'Organisation & team'] },
-    { icon: Users,       title: 'HR',          text: 'Keeps people, clients, placements and timesheets moving every day.',                              access: ['Workforce', 'Clients', 'Placements', 'Timesheets'] },
-    { icon: LineChart,   title: 'Accountant',  text: 'Turns approved time into invoices, payroll and balanced ledgers.',                                 access: ['Talent modules', 'Invoices & settings', 'Payroll', 'Balance sheet'] },
-    { icon: CircleUser,  title: 'Employee',    text: 'A focused self-service portal for everyday work.',                                                 access: ['My dashboard', 'My placements', 'My timesheets', 'My balance sheet'] },
+    { icon: Globe,       title: 'Platform Owner',  text: 'Runs the platform: registers workspaces, reviews their admins and switches tenants on or off.', access: ['Mission control', 'Tenants'] },
+    { icon: ShieldCheck, title: 'Workspace Admin', text: 'Owns the workspace end to end with every module unlocked.',                                 access: ['Talent modules', 'Billing & pay runs', 'Ledger & pay audit', 'Workspace & team'] },
+    { icon: Users,       title: 'Talent Ops',      text: 'Keeps consultants, partners, engagements and time logs moving every day.',                   access: ['Talent', 'Partners', 'Engagements', 'Time Logs'] },
+    { icon: LineChart,   title: 'Finance Lead',    text: 'Turns approved time into invoices, pay runs and balanced ledgers.',                            access: ['Talent modules', 'Billing & rules', 'Pay runs', 'Earnings ledger'] },
+    { icon: CircleUser,  title: 'Consultant',      text: 'A focused self-service portal for everyday work.',                                              access: ['My overview', 'My engagements', 'My time logs', 'My ledger'] },
 ];
 
 const CAPABILITIES = [
@@ -102,9 +102,9 @@ const CAPABILITIES = [
     { icon: ShieldCheck,     title: 'Encrypted credentials', text: 'Passwords are encrypted at rest and reset through emailed one-time codes.' },
     { icon: CloudUpload,     title: 'Cloud file vault',      text: 'Documents, approvals, logos and invoice PDFs are stored in the cloud, not on a server disk.' },
     { icon: Mail,            title: 'Transactional email',   text: 'Welcome credentials, password resets and invoice emails with PDF attachments from your own mailbox.' },
-    { icon: CalendarClock,   title: 'Scheduled automation',  text: 'Background jobs keep invoice and timesheet housekeeping on schedule without anyone pressing a button.' },
-    { icon: FileDown,        title: 'PDF engine',            text: 'Invoice PDFs with bill-rate segments and adjustments, with approved timesheets merged in.' },
-    { icon: FileSpreadsheet, title: 'Excel exports',         text: 'Export workforce, invoices and balance sheets to spreadsheets in a single click.' },
+    { icon: CalendarClock,   title: 'Scheduled automation',  text: 'Background jobs keep invoice and time log housekeeping on schedule without anyone pressing a button.' },
+    { icon: FileDown,        title: 'PDF engine',            text: 'Invoice PDFs with bill-rate segments and adjustments, with approved time logs merged in.' },
+    { icon: FileSpreadsheet, title: 'Excel exports',         text: 'Export talent, billing and ledgers to spreadsheets in a single click.' },
     { icon: Sparkles,        title: 'Eastern-time precision', text: 'Dates, due dates and cut-offs are calculated in US Eastern time across the entire system.' },
 ];
 
@@ -312,8 +312,8 @@ const Landing = () => {
                         </h1>
 
                         <p className="lp-reveal mt-7 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg" style={{ '--d': '160ms' }}>
-                            HR Operations unites workforce records, client placements, timesheets, invoicing, payroll and
-                            reconciliation in one secure platform — so every approved hour flows cleanly into every invoice
+                            HR Operations unites talent records, partner engagements, time logs, billing, pay runs and
+                            pay audits in one secure platform — so every approved hour flows cleanly into every invoice
                             and every paycheck.
                         </p>
 
@@ -342,8 +342,8 @@ const Landing = () => {
                             <div className="flex items-center gap-3">
                                 <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-emerald-400/15 text-emerald-300"><CheckCircle2 size={18} /></span>
                                 <div>
-                                    <p className="text-sm font-semibold text-white">Timesheet approved</p>
-                                    <p className="lp-mono text-[11px] text-white/45">40.00 hrs · client approval attached</p>
+                                    <p className="text-sm font-semibold text-white">Time log approved</p>
+                                    <p className="lp-mono text-[11px] text-white/45">40.00 hrs · partner approval attached</p>
                                 </div>
                             </div>
                         </div>
@@ -372,7 +372,7 @@ const Landing = () => {
                             <div className="flex items-center gap-3">
                                 <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-cyan-400/15 text-cyan-300"><Wallet size={18} /></span>
                                 <div>
-                                    <p className="text-sm font-semibold text-white">Payroll run submitted</p>
+                                    <p className="text-sm font-semibold text-white">Pay run locked</p>
                                     <p className="lp-mono text-[11px] text-white/45">ledgers updated</p>
                                 </div>
                             </div>
@@ -411,7 +411,7 @@ const Landing = () => {
                     <SectionHeading
                         eyebrow="The platform"
                         title={<>One platform.<br /><span className="lp-gradient-text">Zero spreadsheets in between.</span></>}
-                        text="Staffing firms juggle people, clients, hours and money across disconnected tools. HR Operations replaces the patchwork with a single, role-aware system that follows work from first placement to final reconciliation."
+                        text="Staffing firms juggle people, clients, hours and money across disconnected tools. HR Operations replaces the patchwork with a single, role-aware system that follows work from first engagement to final pay audit."
                     />
 
                     <div className="mt-16 grid gap-5 md:grid-cols-3">
@@ -457,7 +457,7 @@ const Landing = () => {
                     <SectionHeading
                         eyebrow="Modules"
                         title={<>Twelve modules.<br /><span className="lp-gradient-text">One operating rhythm.</span></>}
-                        text="Everything a staffing operation touches, from the first employee record to the last reconciled dollar."
+                        text="Everything a staffing operation touches, from the first consultant record to the last audited dollar."
                     />
 
                     <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -498,12 +498,12 @@ const Landing = () => {
                                 <span className="h-3 w-3 rounded-full bg-rose-400/80" />
                                 <span className="h-3 w-3 rounded-full bg-amber-300/80" />
                                 <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
-                                <div className="lp-mono ml-4 flex-1 truncate rounded-full bg-white/5 px-4 py-1 text-xs text-white/40">console / management / dashboard</div>
+                                <div className="lp-mono ml-4 flex-1 truncate rounded-full bg-white/5 px-4 py-1 text-xs text-white/40">console / overview</div>
                             </div>
 
                             <div className="grid gap-5 p-5 sm:p-8 lg:grid-cols-[210px_1fr]">
                                 <div className="hidden flex-col gap-1 lg:flex">
-                                    {['Dashboard', 'Workforce', 'Placements', 'Timesheets', 'Invoices', 'Payroll', 'Reconcile'].map((item, i) => (
+                                    {['Overview', 'Talent', 'Engagements', 'Time Logs', 'Billing', 'Pay Runs', 'Pay Audit'].map((item, i) => (
                                         <span
                                             key={item}
                                             className={`rounded-[12px] px-3 py-2 text-sm ${i === 0 ? 'bg-violet-500/15 text-white' : 'text-white/45'}`}
@@ -516,7 +516,7 @@ const Landing = () => {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                                         {[
-                                            { label: 'Active employees', value: '128', tone: 'text-violet-300' },
+                                            { label: 'Active consultants', value: '128', tone: 'text-violet-300' },
                                             { label: 'Pending approvals', value: '14', tone: 'text-amber-300' },
                                             { label: 'Ready to send', value: '9', tone: 'text-cyan-300' },
                                             { label: 'Net balance', value: '$482K', tone: 'text-emerald-300' },
@@ -530,7 +530,7 @@ const Landing = () => {
 
                                     <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
                                         <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.03] p-4">
-                                            <p className="lp-mono text-[10px] uppercase tracking-[0.2em] text-white/40">Timesheets this week</p>
+                                            <p className="lp-mono text-[10px] uppercase tracking-[0.2em] text-white/40">Time logs this week</p>
                                             <div className="mt-3 space-y-2">
                                                 {[
                                                     { code: 'PL-2041', name: 'A. Morgan', status: 'Approved', tone: 'bg-emerald-400/15 text-emerald-300' },
@@ -580,7 +580,7 @@ const Landing = () => {
                 <div className="relative mx-auto max-w-7xl">
                     <SectionHeading
                         eyebrow="Workflow"
-                        title={<>From first hire to <span className="lp-gradient-text">final reconciliation.</span></>}
+                        title={<>From first hire to <span className="lp-gradient-text">final pay audit.</span></>}
                         text="Eight connected stages, each feeding the next with the same trusted data."
                     />
 

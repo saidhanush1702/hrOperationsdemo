@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PlayCircle, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
+import { Btn, Field, Notice } from '../../../components/ui/kit';
 
 const RunPayrollModal = ({ isOpen, onClose, onPayrollComplete }) => {
     const [periodStart, setPeriodStart] = useState('');
@@ -26,36 +27,24 @@ const RunPayrollModal = ({ isOpen, onClose, onPayrollComplete }) => {
         try {
             const result = await managementAPI.runW2Payroll({ periodStart, periodEnd });
             const data = result.data;
-            setSuccessMsg(`Successfully processed ${data.placementsProcessed} W2 placements for the period: ${data.period}.`);
+            setSuccessMsg(`Processed ${data.placementsProcessed} W2 engagements for the period: ${data.period}.`);
             setPeriodStart('');
             setPeriodEnd('');
             if (onPayrollComplete) onPayrollComplete();
             setTimeout(() => { setSuccessMsg(null); onClose(); }, 2500);
         } catch (err) {
-            setError(err.response?.data?.error || "Failed to run payroll. Please try again.");
+            setError(err.response?.data?.error || "Failed to run the pay run. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
 
     const footer = (
-        <div className="flex justify-end gap-3 w-full">
-            <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-5 py-2.5 text-xs font-bold text-(--text-main) bg-(--bg-surface) border border-(--border-subtle) rounded-xl uppercase tracking-widest hover:opacity-80 transition-all outline-none disabled:opacity-50"
-            >
-                Cancel
-            </button>
-            <button
-                type="submit"
-                onClick={handleRunPayroll}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-(--brand-primary-text) bg-(--brand-primary) rounded-xl uppercase tracking-widest hover:opacity-90 transition-all outline-none shadow-sm active:scale-95 disabled:opacity-50"
-            >
-                {isLoading ? <><Loader2 size={14} className="animate-spin" /> Running...</> : <><PlayCircle size={14} /> Run Payroll</>}
-            </button>
+        <div className="flex w-full justify-end gap-2">
+            <Btn onClick={onClose} disabled={isLoading}>Cancel</Btn>
+            <Btn type="submit" form="w2RunForm" variant="primary" icon={isLoading ? Loader2 : PlayCircle} disabled={isLoading}>
+                {isLoading ? 'Running…' : 'Run W2 pay'}
+            </Btn>
         </div>
     );
 
@@ -63,52 +52,26 @@ const RunPayrollModal = ({ isOpen, onClose, onPayrollComplete }) => {
         <BaseModal
             isOpen={isOpen}
             onClose={!isLoading ? onClose : undefined}
-            icon={<PlayCircle size={16} />}
-            title="Run W2 Payroll"
-            subtitle="Post earnings to the balance sheet for the selected period"
+            icon={<PlayCircle size={18} />}
+            title="Run W2 pay"
+            subtitle="Post earnings to the ledger for the selected period"
             footer={footer}
         >
-            <div className="space-y-4">
-                <p className="text-xs text-(--text-muted) font-bold uppercase tracking-widest">
-                    Select the 15-day timesheet period to calculate and post W2 earnings.
-                </p>
+            <form id="w2RunForm" onSubmit={handleRunPayroll} className="mx-auto max-w-xl space-y-5">
+                <p className="text-sm text-(--text-muted)">Select the 15-day time log period to calculate and post W2 earnings.</p>
 
-                {error && (
-                    <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200 font-bold flex items-center gap-2">
-                        <AlertTriangle size={14} /> {error}
-                    </div>
-                )}
-                {successMsg && (
-                    <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl border border-emerald-200 font-bold flex items-center gap-2">
-                        <CheckCircle size={14} /> {successMsg}
-                    </div>
-                )}
+                {error && <Notice tone="rose" icon={AlertTriangle}>{error}</Notice>}
+                {successMsg && <Notice tone="green" icon={CheckCircle}>{successMsg}</Notice>}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">Period Start</label>
-                        <input
-                            type="date"
-                            required
-                            value={periodStart}
-                            onChange={(e) => setPeriodStart(e.target.value)}
-                            disabled={isLoading}
-                            className="w-full px-3 py-2.5 bg-(--bg-surface) border border-(--border-subtle) rounded-xl text-sm text-(--text-main) focus:border-(--brand-primary) focus:ring-1 focus:ring-(--brand-primary) outline-none transition-all disabled:opacity-50"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">Period End</label>
-                        <input
-                            type="date"
-                            required
-                            value={periodEnd}
-                            onChange={(e) => setPeriodEnd(e.target.value)}
-                            disabled={isLoading}
-                            className="w-full px-3 py-2.5 bg-(--bg-surface) border border-(--border-subtle) rounded-xl text-sm text-(--text-main) focus:border-(--brand-primary) focus:ring-1 focus:ring-(--brand-primary) outline-none transition-all disabled:opacity-50"
-                        />
-                    </div>
+                <div className="grid gap-4 rounded-[22px] border border-(--border-subtle) bg-(--bg-surface) p-5 sm:grid-cols-2">
+                    <Field label="Period start">
+                        <input type="date" required value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} disabled={isLoading} className="nx-input" />
+                    </Field>
+                    <Field label="Period end">
+                        <input type="date" required value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} disabled={isLoading} className="nx-input" />
+                    </Field>
                 </div>
-            </div>
+            </form>
         </BaseModal>
     );
 };

@@ -1,24 +1,23 @@
 import { useState } from 'react';
-import { Building, Check, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Globe, Check, Loader2, Eye, EyeOff, Building2, KeyRound } from 'lucide-react';
 import BaseModal from '../../components/ui/BaseModal';
 import api from '../../api/axios';
+import { Field, Btn } from '../../components/ui/kit';
 
 const EMPTY_FORM = { name: '', admin_first_name: '', admin_last_name: '', admin_email: '', admin_password: '', domain: '', address: '' };
 
-const Field = ({ label, children }) => (
-    <div className="space-y-1">
-        <label className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest ml-1">
-            {label}
-        </label>
-        {children}
+const Block = ({ n, icon: Icon, title, text, children }) => (
+    <div className="grid gap-5 rounded-[24px] border border-(--border-subtle) bg-(--bg-surface) p-5 sm:p-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div>
+            <div className="flex items-center gap-3">
+                <span className="font-mono text-2xl font-semibold nx-gradient-text">{n}</span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-(--brand-primary)/10 text-(--brand-primary)"><Icon size={16} /></span>
+            </div>
+            <p className="mt-3 text-base font-semibold text-(--text-main)">{title}</p>
+            <p className="mt-1 text-xs text-(--text-muted)">{text}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">{children}</div>
     </div>
-);
-
-const Input = (props) => (
-    <input
-        className="w-full p-3.5 bg-(--input-bg) text-(--input-text) border border-(--border-subtle) rounded-2xl text-sm outline-none focus:border-(--brand-primary) focus:ring-1 focus:ring-(--brand-primary) transition-all placeholder:text-(--input-placeholder)"
-        {...props}
-    />
 );
 
 const RegisterOrgModal = ({ isOpen, onClose, onRefresh }) => {
@@ -44,107 +43,64 @@ const RegisterOrgModal = ({ isOpen, onClose, onRefresh }) => {
     };
 
     const footer = (
-        <button
-            form="register-org-form"
-            type="submit"
-            disabled={loading}
-            className="ml-auto bg-(--brand-primary) text-(--brand-primary-text) px-8 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg hover:opacity-90 active:scale-95 focus:ring-4 focus:ring-(--brand-primary)/50 outline-none transition-all disabled:opacity-50"
-        >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <><Check size={15} /> Complete Registration</>}
-        </button>
+        <Btn variant="primary" type="submit" form="register-org-form" disabled={loading} icon={loading ? Loader2 : Check} className="ml-auto">
+            {loading ? 'Registering…' : 'Launch tenant'}
+        </Btn>
     );
 
     return (
         <BaseModal
             isOpen={isOpen}
             onClose={onClose}
-            icon={<Building size={18} />}
-            title="Register Tenant"
-            subtitle="Create a new organization and its admin account"
+            icon={<Globe size={18} />}
+            title="Register tenant"
+            subtitle="Create a workspace and its owner account"
             footer={footer}
         >
-            <form id="register-org-form" onSubmit={handleSubmit} className="space-y-5">
+            <form id="register-org-form" onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-5">
+                <Block n="01" icon={Building2} title="Workspace identity" text="How this tenant appears across the platform.">
+                    <Field label="Tenant name" required>
+                        <input className="nx-input" required placeholder="e.g. Acme Corp" value={formData.name} onChange={set('name')} />
+                    </Field>
+                    <Field label="Custom domain">
+                        <input className="nx-input" placeholder="acme.com" value={formData.domain} onChange={set('domain')} />
+                    </Field>
+                    <Field label="Headquarters address" className="sm:col-span-2">
+                        <textarea className="nx-input h-24 resize-none" placeholder="Headquarters address…" value={formData.address} onChange={set('address')} />
+                    </Field>
+                </Block>
 
-                {/* Row 1: Org Name + Domain */}
-                <div className="grid grid-cols-2 gap-4">
-                    <Field label="Organization Name">
-                        <Input
-                            required
-                            placeholder="e.g. Acme Corp"
-                            value={formData.name}
-                            onChange={set('name')}
-                        />
+                <Block n="02" icon={KeyRound} title="Owner account" text="The first admin who can sign in and set the workspace up.">
+                    <Field label="First name">
+                        <input className="nx-input" placeholder="John" value={formData.admin_first_name} onChange={set('admin_first_name')} />
                     </Field>
-                    <Field label="Custom Domain">
-                        <Input
-                            placeholder="acme.com"
-                            value={formData.domain}
-                            onChange={set('domain')}
-                        />
+                    <Field label="Last name">
+                        <input className="nx-input" placeholder="Smith" value={formData.admin_last_name} onChange={set('admin_last_name')} />
                     </Field>
-                </div>
-
-                {/* Row 2: First Name + Last Name */}
-                <div className="grid grid-cols-2 gap-4">
-                    <Field label="Admin First Name">
-                        <Input
-                            placeholder="John"
-                            value={formData.admin_first_name}
-                            onChange={set('admin_first_name')}
-                        />
+                    <Field label="Sign-in email" required>
+                        <input className="nx-input" type="email" required placeholder="admin@org.com" value={formData.admin_email} onChange={set('admin_email')} />
                     </Field>
-                    <Field label="Admin Last Name">
-                        <Input
-                            placeholder="Smith"
-                            value={formData.admin_last_name}
-                            onChange={set('admin_last_name')}
-                        />
-                    </Field>
-                </div>
-
-                {/* Row 3: Admin Email + Password */}
-                <div className="grid grid-cols-2 gap-4">
-                    <Field label="Admin Email">
-                        <Input
-                            type="email"
-                            required
-                            placeholder="admin@org.com"
-                            value={formData.admin_email}
-                            onChange={set('admin_email')}
-                        />
-                    </Field>
-                    <Field label="Password">
+                    <Field label="Password" required>
                         <div className="relative">
-                            <Input
+                            <input
+                                className="nx-input pr-11"
                                 type={showPassword ? 'text' : 'password'}
                                 required
                                 placeholder="Min. 6 characters"
                                 value={formData.admin_password}
                                 onChange={set('admin_password')}
-                                style={{ paddingRight: '2.75rem' }}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(p => !p)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-(--text-muted) hover:text-(--text-main) transition-colors"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-(--text-muted) transition-colors hover:text-(--text-main)"
                                 tabIndex={-1}
                             >
                                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                             </button>
                         </div>
                     </Field>
-                </div>
-
-                {/* Row 4: Address */}
-                <Field label="Physical Address">
-                    <textarea
-                        className="w-full p-3.5 bg-(--input-bg) text-(--input-text) border border-(--border-subtle) rounded-2xl text-sm outline-none focus:border-(--brand-primary) focus:ring-1 focus:ring-(--brand-primary) transition-all h-24 resize-none placeholder:text-(--input-placeholder)"
-                        placeholder="Headquarters address..."
-                        value={formData.address}
-                        onChange={set('address')}
-                    />
-                </Field>
-
+                </Block>
             </form>
         </BaseModal>
     );

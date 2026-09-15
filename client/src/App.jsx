@@ -3,12 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
 import Landing from './pages/landing/Landing';
+import { PATHS } from './utils/constants';
 
-// Super Admin
+// Platform (super admin)
 const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'));
 const Organizations        = lazy(() => import('./pages/super-admin/Organizations'));
 
-// Management — shared by ORG_ADMIN and HR
+// Console — shared by ORG_ADMIN, HR and ACCOUNTANT
 const ManagementDashboard = lazy(() => import('./pages/management/dashboard/ManagementDashboard'));
 const Workforce           = lazy(() => import('./pages/management/workforce/Workforce'));
 const Clients             = lazy(() => import('./pages/management/clients/Clients'));
@@ -16,18 +17,18 @@ const Placements          = lazy(() => import('./pages/management/placements/Pla
 const Timesheets          = lazy(() => import('./pages/management/timesheets/Timesheets'));
 const Organisation        = lazy(() => import('./pages/management/organisation/Organisation'));
 
-// ORG_ADMIN only
+// Money
 const Invoices        = lazy(() => import('./pages/management/invoices/Invoices'));
 const InvoiceSettings = lazy(() => import('./pages/management/invoices/InvoiceSettingsModal'));
 const BalanceSheet    = lazy(() => import('./pages/management/balancesheet/BalanceSheet'));
 const Payroll         = lazy(() => import('./pages/management/payroll/Payroll'));
 const Reconcile       = lazy(() => import('./pages/management/reconcile/Reconcile'));
 
-// Employee Portal
-const EmployeeDashboard   = lazy(() => import('./pages/portal/dashboard/EmployeeDashboard'));
-const EmployeeTimesheets  = lazy(() => import('./pages/portal/timesheets/EmployeeTimesheets'));
+// Consultant portal
+const EmployeeDashboard    = lazy(() => import('./pages/portal/dashboard/EmployeeDashboard'));
+const EmployeeTimesheets   = lazy(() => import('./pages/portal/timesheets/EmployeeTimesheets'));
 const EmployeeBalanceSheet = lazy(() => import('./pages/portal/balancesheet/EmployeeBalanceSheet'));
-const EmployeePlacements  = lazy(() => import('./pages/portal/placements/EmployeePlacements'));
+const EmployeePlacements   = lazy(() => import('./pages/portal/placements/EmployeePlacements'));
 
 const PageLoader = () => (
     <div className="flex items-center justify-center flex-1 h-full min-h-75">
@@ -58,6 +59,9 @@ const route = (Component, allowedRoles) => (
     </ProtectedRoute>
 );
 
+const CONSOLE = ['ORG_ADMIN', 'HR', 'ACCOUNTANT'];
+const MONEY   = ['ORG_ADMIN', 'ACCOUNTANT'];
+
 function App() {
     return (
         <Router>
@@ -65,30 +69,30 @@ function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
 
-                {/* Super Admin */}
-                <Route path="/super-admin/dashboard"     element={route(SuperAdminDashboard, ['SUPER_ADMIN'])} />
-                <Route path="/super-admin/organizations" element={route(Organizations,        ['SUPER_ADMIN'])} />
+                {/* Platform */}
+                <Route path={PATHS.platformOverview} element={route(SuperAdminDashboard, ['SUPER_ADMIN'])} />
+                <Route path={PATHS.tenants}          element={route(Organizations,        ['SUPER_ADMIN'])} />
 
-                {/* Management — shared by ORG_ADMIN, HR, ACCOUNTANT */}
-                <Route path="/management/dashboard"  element={route(ManagementDashboard, ['ORG_ADMIN', 'HR', 'ACCOUNTANT'])} />
-                <Route path="/management/workforce"  element={route(Workforce,           ['ORG_ADMIN', 'HR', 'ACCOUNTANT'])} />
-                <Route path="/management/clients"    element={route(Clients,             ['ORG_ADMIN', 'HR', 'ACCOUNTANT'])} />
-                <Route path="/management/placements" element={route(Placements,          ['ORG_ADMIN', 'HR', 'ACCOUNTANT'])} />
-                <Route path="/management/timesheets" element={route(Timesheets,          ['ORG_ADMIN', 'HR', 'ACCOUNTANT'])} />
+                {/* Console */}
+                <Route path={PATHS.overview}    element={route(ManagementDashboard, CONSOLE)} />
+                <Route path={PATHS.talent}      element={route(Workforce,           CONSOLE)} />
+                <Route path={PATHS.partners}    element={route(Clients,             CONSOLE)} />
+                <Route path={PATHS.engagements} element={route(Placements,          CONSOLE)} />
+                <Route path={PATHS.timeLogs}    element={route(Timesheets,          CONSOLE)} />
 
-                {/* ORG_ADMIN + ACCOUNTANT */}
-                <Route path="/management/invoice-settings" element={route(InvoiceSettings, ['ORG_ADMIN', 'ACCOUNTANT'])} />
-                <Route path="/management/invoices"         element={route(Invoices,         ['ORG_ADMIN', 'ACCOUNTANT'])} />
-                <Route path="/management/payroll"          element={route(Payroll,          ['ORG_ADMIN', 'ACCOUNTANT'])} />
-                <Route path="/management/reconcile"        element={route(Reconcile,        ['ORG_ADMIN'])} />
-                <Route path="/management/balance-sheet"    element={route(BalanceSheet,     ['ORG_ADMIN', 'ACCOUNTANT'])} />
-                <Route path="/management/organisation"     element={route(Organisation,     ['ORG_ADMIN'])} />
+                {/* Money */}
+                <Route path={PATHS.billingRules} element={route(InvoiceSettings, MONEY)} />
+                <Route path={PATHS.billing}      element={route(Invoices,        MONEY)} />
+                <Route path={PATHS.payRuns}      element={route(Payroll,         MONEY)} />
+                <Route path={PATHS.payAudit}     element={route(Reconcile,       ['ORG_ADMIN'])} />
+                <Route path={PATHS.ledger}       element={route(BalanceSheet,    MONEY)} />
+                <Route path={PATHS.workspace}    element={route(Organisation,    ['ORG_ADMIN'])} />
 
-                {/* Employee Portal */}
-                <Route path="/portal/dashboard"     element={route(EmployeeDashboard,    ['EMPLOYEE'])} />
-                <Route path="/portal/placements"    element={route(EmployeePlacements,   ['EMPLOYEE'])} />
-                <Route path="/portal/timesheets"    element={route(EmployeeTimesheets,   ['EMPLOYEE'])} />
-                <Route path="/portal/balance-sheet" element={route(EmployeeBalanceSheet, ['EMPLOYEE'])} />
+                {/* Consultant portal */}
+                <Route path={PATHS.myOverview}    element={route(EmployeeDashboard,    ['EMPLOYEE'])} />
+                <Route path={PATHS.myEngagements} element={route(EmployeePlacements,   ['EMPLOYEE'])} />
+                <Route path={PATHS.myTimeLogs}    element={route(EmployeeTimesheets,   ['EMPLOYEE'])} />
+                <Route path={PATHS.myLedger}      element={route(EmployeeBalanceSheet, ['EMPLOYEE'])} />
 
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

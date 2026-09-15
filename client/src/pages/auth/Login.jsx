@@ -15,9 +15,9 @@ export const HOME_FOR_ROLE = {
 };
 
 const HIGHLIGHTS = [
-    { icon: ShieldCheck, title: 'Role-based workspaces', text: 'Admins, HR, accountants and employees each get exactly the tools they need.' },
-    { icon: Zap,         title: 'Time to invoice, automated', text: 'Approved hours flow straight into invoices, payroll and ledgers.' },
-    { icon: Wallet,      title: 'Money in full view', text: 'Balances, payments and reconciliation, always current.' },
+    { icon: ShieldCheck, title: 'Role-based workspaces', text: 'Workspace admins, talent ops, finance leads and consultants each get exactly the tools they need.' },
+    { icon: Zap,         title: 'Time to invoice, automated', text: 'Approved time logs flow straight into billing, pay runs and ledgers.' },
+    { icon: Wallet,      title: 'Money in full view', text: 'Balances, payments and pay audits, always current.' },
 ];
 
 const Login = () => {
@@ -81,11 +81,11 @@ const Login = () => {
                         <BrandMark size={52} className="drop-shadow-[0_10px_30px_rgba(124,92,255,0.6)]" />
                         <p className="mt-8 font-mono text-xs uppercase tracking-[0.3em] text-cyan-300/80">Operations console</p>
                         <h1 className="mt-4 text-5xl font-extrabold leading-[1.02] tracking-[-0.035em] text-white xl:text-6xl" style={{ fontFamily: 'var(--font-display)' }}>
-                            Every placement.<br />
+                            Every engagement.<br />
                             <span className="nx-gradient-text">Every hour. Every dollar.</span>
                         </h1>
                         <p className="mt-6 max-w-md text-base leading-relaxed text-white/60">
-                            Sign in to manage your workforce, approve time, send invoices and run payroll from one secure console.
+                            Sign in to manage your talent, approve time logs, send invoices and run pay runs from one secure console.
                         </p>
 
                         <ul className="mt-10 space-y-3">

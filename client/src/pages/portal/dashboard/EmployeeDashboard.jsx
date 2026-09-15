@@ -1,40 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Briefcase, Calendar, Clock, AlertCircle, TrendingUp, Loader2,
-    User, ChevronDown, Phone, Mail, Globe, CreditCard
+    Rocket, CalendarDays, Hourglass, AlertCircle, TrendingUp, Gauge,
+    User, ChevronDown, Phone, Mail, Globe, BadgeCheck, Cake, Briefcase, MapPin, Heart, Users,
 } from 'lucide-react';
 import { portalAPI } from '../../../api/apiService';
-
 import { fmtDate } from '../../../utils/dateUtils';
-
-const StatCard = ({ label, value, icon: Icon, colorClass, subLabel, loading, onClick }) => (
-    <div
-        onClick={onClick}
-        className={`bg-(--bg-surface) border border-(--border-subtle) p-5 rounded-2xl shadow-sm transition-all duration-300
-            ${onClick ? 'cursor-pointer hover:border-(--brand-primary)/40 hover:shadow-md hover:-translate-y-0.5' : ''}`}
-    >
-        <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-3 ${colorClass}/10`}>
-            <Icon size={18} className={colorClass} />
-        </div>
-        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">{label}</p>
-        {loading ? (
-            <div className="h-7 w-24 bg-(--border-subtle) rounded animate-pulse mt-1" />
-        ) : (
-            <p className="text-xl font-bold text-(--text-main) mt-1">{value}</p>
-        )}
-        {subLabel && !loading && (
-            <p className="text-[9px] text-(--text-muted) mt-1 font-bold uppercase tracking-widest">{subLabel}</p>
-        )}
-    </div>
-);
-
-const ProfileField = ({ label, value }) => (
-    <div>
-        <p className="text-[9px] font-bold text-(--text-muted) uppercase tracking-widest mb-0.5">{label}</p>
-        <p className="text-xs font-bold text-(--text-main) break-words">{value || '—'}</p>
-    </div>
-);
+import { PATHS } from '../../../utils/constants';
+import { PageHero, StatRail, StatTile, Panel, Fact, Btn, Chip, Avatar, EmptyState, LoadingState } from '../../../components/ui/kit';
 
 const EmployeeDashboard = () => {
     const [stats, setStats]               = useState(null);
@@ -47,7 +20,7 @@ const EmployeeDashboard = () => {
     useEffect(() => {
         portalAPI.getDashboardStats()
             .then(res => setStats(res.data))
-            .catch(err => console.error('Dashboard stats error:', err))
+            .catch(err => console.error('Overview stats error:', err))
             .finally(() => setLoading(false));
     }, []);
 
@@ -67,193 +40,119 @@ const EmployeeDashboard = () => {
 
     const cards = [
         {
-            label: 'Active Placements',
+            label: 'Running engagements',
             value: stats ? `${stats.active_placements}` : '0',
-            subLabel: stats?.active_placements === 1 ? 'placement' : 'placements',
-            icon: Briefcase,
-            colorClass: 'text-(--brand-primary)',
-            onClick: () => navigate('/portal/placements?filter=ACTIVE'),
+            hint: stats?.active_placements === 1 ? 'engagement' : 'engagements',
+            icon: Rocket,
+            onClick: () => navigate(`${PATHS.myEngagements}?filter=ACTIVE`),
         },
         {
-            label: 'Hours This Week',
+            label: 'Hours this week',
             value: stats ? `${stats.hours_this_week}` : '0',
-            subLabel: 'hrs logged (Mon–Sun)',
-            icon: Calendar,
-            colorClass: 'text-blue-500',
-            onClick: () => navigate('/portal/timesheets'),
+            hint: 'hrs logged (Mon–Sun)',
+            icon: CalendarDays,
+            onClick: () => navigate(PATHS.myTimeLogs),
         },
         {
-            label: 'Pending Timesheets',
+            label: 'Time logs to submit',
             value: stats ? `${stats.pending_timesheets}` : '0',
-            subLabel: stats?.pending_timesheets > 0 ? 'need attention' : 'all up to date',
-            icon: stats?.pending_timesheets > 0 ? AlertCircle : Clock,
-            colorClass: stats?.pending_timesheets > 0 ? 'text-orange-500' : 'text-green-500',
-            onClick: () => navigate('/portal/timesheets?tab=NOT_SUBMITTED'),
+            hint: stats?.pending_timesheets > 0 ? 'need attention' : 'all up to date',
+            icon: stats?.pending_timesheets > 0 ? AlertCircle : Hourglass,
+            onClick: () => navigate(`${PATHS.myTimeLogs}?tab=NOT_SUBMITTED`),
         },
         {
-            label: 'Net Balance',
+            label: 'Net balance',
             value: stats ? fmt$(stats.net_balance) : '$0.00',
-            subLabel: 'total earnings ledger',
+            hint: 'from your earnings ledger',
             icon: TrendingUp,
-            colorClass: (stats?.net_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500',
-            onClick: () => navigate('/portal/balance-sheet'),
+            onClick: () => navigate(PATHS.myLedger),
         },
     ];
 
     const immigrations = profile?.immigrations || [];
 
     return (
-        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
+        <div className="mx-auto max-w-[1400px] space-y-6">
+            <PageHero
+                icon={Gauge}
+                eyebrow="My work"
+                title="My overview"
+                description="Your engagements, hours and balance at a glance."
+                actions={
+                    <Btn icon={User} onClick={handleProfileToggle} aria-expanded={profileOpen}>
+                        {profileOpen ? 'Hide profile' : 'My profile'}
+                        <ChevronDown size={14} className={`transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`} />
+                    </Btn>
+                }
+            >
+                <StatRail>
+                    {cards.map((card) => (
+                        <StatTile key={card.label} label={card.label} icon={card.icon} value={loading ? '…' : card.value} hint={loading ? undefined : card.hint} onClick={card.onClick} />
+                    ))}
+                </StatRail>
+            </PageHero>
 
-            {/* ── My Profile expandable bar ── */}
-            <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm overflow-hidden">
-                <button
-                    onClick={handleProfileToggle}
-                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-(--bg-app)/50 transition-colors outline-none"
-                >
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-7 w-7 rounded-lg bg-(--brand-primary)/10 flex items-center justify-center text-(--brand-primary)">
-                            <User size={14} />
-                        </div>
-                        <span className="text-xs font-bold text-(--text-main) uppercase tracking-widest">My Profile</span>
+            {profileOpen && (
+                profileLoading ? (
+                    <LoadingState text="Loading profile…" />
+                ) : !profile ? (
+                    <div className="rounded-[24px] border border-(--border-subtle) bg-(--bg-surface)">
+                        <EmptyState icon={User} title="Profile not found" />
                     </div>
-                    <ChevronDown
-                        size={16}
-                        className={`text-(--text-muted) transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`}
-                    />
-                </button>
-
-                {/* Expanded profile details */}
-                {profileOpen && (
-                    <div className="border-t border-(--border-subtle) px-5 py-4">
-                        {profileLoading ? (
-                            <div className="flex items-center justify-center py-8 gap-2 text-(--text-muted)">
-                                <Loader2 size={18} className="animate-spin text-(--brand-primary)" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Loading profile…</span>
+                ) : (
+                    <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+                        <section className="rounded-[26px] border border-(--border-subtle) bg-(--bg-surface) p-6 text-center">
+                            <Avatar name={`${profile.first_name} ${profile.last_name}`} size={84} ring className="mx-auto" />
+                            <p className="mt-4 text-xl font-semibold text-(--text-main)" style={{ fontFamily: 'var(--font-display)' }}>{profile.first_name} {profile.last_name}</p>
+                            <p className="text-sm text-(--brand-primary)">{profile.title || 'Consultant'}</p>
+                            <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                                <Chip tone="slate">{profile.employee_code}</Chip>
+                                <Chip tone={profile.is_active ? 'green' : 'rose'}>{profile.is_active ? 'Active' : 'Inactive'}</Chip>
+                                {profile.e_verification_code && <Chip tone="sky" icon={BadgeCheck}>E-Verified</Chip>}
                             </div>
-                        ) : !profile ? (
-                            <div className="flex items-center justify-center py-8 text-(--text-muted)">
-                                <p className="text-[10px] font-bold uppercase tracking-widest">Profile not found.</p>
+                            <div className="mt-6 space-y-3 border-t border-(--border-subtle) pt-5 text-left">
+                                <Fact icon={Mail} label="Work email" value={profile.work_email || '—'} />
+                                {profile.personal_email && <Fact icon={Mail} label="Personal email" value={profile.personal_email} />}
+                                {profile.phone_number && <Fact icon={Phone} label="Phone" value={`${profile.phone_dial_code || ''} ${profile.phone_number}`} />}
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {/* Avatar + name */}
-                                <div className="flex items-center gap-4 p-4 bg-(--brand-primary)/5 border border-(--brand-primary)/20 rounded-xl">
-                                    <div className="h-12 w-12 rounded-xl bg-(--brand-primary)/10 border border-(--brand-primary)/20 flex items-center justify-center text-(--brand-primary) text-base font-bold uppercase shrink-0">
-                                        {profile.first_name?.[0]}{profile.last_name?.[0]}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold text-(--text-main) tracking-tight">
-                                            {profile.first_name} {profile.last_name}
-                                        </p>
-                                        <p className="text-[10px] text-(--brand-primary) font-bold tracking-widest mt-0.5">
-                                            {profile.title || 'Employee'}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                            <span className="text-[9px] font-mono font-bold text-(--text-muted) bg-(--bg-app) px-2 py-0.5 rounded border border-(--border-subtle)">
-                                                {profile.employee_code}
-                                            </span>
-                                            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                                                profile.is_active
-                                                    ? 'bg-green-500/10 text-green-600 border-green-500/20'
-                                                    : 'bg-red-500/10 text-red-600 border-red-500/20'
-                                            }`}>
-                                                {profile.is_active ? 'Active' : 'Inactive'}
-                                            </span>
-                                            {profile.e_verification_code && (
-                                                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-600 border-blue-500/20">
-                                                    E-Verified
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                            <p className="mt-6 text-xs text-(--text-muted)">Contact Talent Ops to update your information.</p>
+                        </section>
 
-                                {/* Details grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                    <ProfileField label="Employee Type"  value={profile.employee_type_name} />
-                                    <ProfileField label="Date of Birth"  value={fmtDate(profile.birth_date)} />
-                                    <ProfileField label="Gender"         value={profile.gender_name} />
-                                    <ProfileField label="Marital Status" value={profile.marital_status_name} />
-                                    <ProfileField label="Joining Date"   value={fmtDate(profile.joining_date)} />
-                                    <ProfileField label="Country"        value={profile.country_name} />
+                        <div className="space-y-5">
+                            <Panel icon={User} title="Personal details">
+                                <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                                    <Fact icon={Briefcase} label="Consultant type" value={profile.employee_type_name} />
+                                    <Fact icon={Cake} label="Date of birth" value={fmtDate(profile.birth_date)} />
+                                    <Fact icon={Users} label="Gender" value={profile.gender_name} />
+                                    <Fact icon={Heart} label="Marital status" value={profile.marital_status_name} />
+                                    <Fact icon={CalendarDays} label="Joining date" value={fmtDate(profile.joining_date)} />
+                                    <Fact icon={MapPin} label="Country" value={profile.country_name} />
                                     {profile.e_verification_code && (
-                                        <ProfileField label="E-Verification" value={profile.e_verification_code} />
+                                        <Fact icon={BadgeCheck} label="E-Verification" value={profile.e_verification_code} mono />
                                     )}
                                 </div>
+                            </Panel>
 
-                                {/* Contact */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2 border-t border-(--border-subtle)">
-                                    <div className="flex items-center gap-2">
-                                        <Mail size={13} className="text-(--text-muted) shrink-0" />
-                                        <div className="min-w-0">
-                                            <p className="text-[9px] font-bold text-(--text-muted) uppercase tracking-widest">Work Email</p>
-                                            <p className="text-xs font-bold text-(--text-main) truncate">{profile.work_email || '—'}</p>
-                                        </div>
-                                    </div>
-                                    {profile.personal_email && (
-                                        <div className="flex items-center gap-2">
-                                            <Mail size={13} className="text-(--text-muted) shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] font-bold text-(--text-muted) uppercase tracking-widest">Personal Email</p>
-                                                <p className="text-xs font-bold text-(--text-main) truncate">{profile.personal_email}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {profile.phone_number && (
-                                        <div className="flex items-center gap-2">
-                                            <Phone size={13} className="text-(--text-muted) shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] font-bold text-(--text-muted) uppercase tracking-widest">Phone</p>
-                                                <p className="text-xs font-bold text-(--text-main)">
-                                                    {profile.phone_dial_code} {profile.phone_number}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Immigration records */}
-                                {immigrations.length > 0 && (
-                                    <div className="pt-2 border-t border-(--border-subtle)">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Globe size={13} className="text-(--text-muted)" />
-                                            <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">
-                                                Immigration Records
-                                            </p>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {immigrations.map((imm, i) => (
-                                                <div key={imm.id || i} className="bg-(--bg-app) rounded-xl border border-(--border-subtle) px-3 py-2 grid grid-cols-3 gap-2">
-                                                    <ProfileField label="Status"     value={imm.status_name} />
-                                                    <ProfileField label="Start"      value={fmtDate(imm.start_date)} />
-                                                    <ProfileField label="Till"       value={fmtDate(imm.till_date)} />
-                                                    {imm.lca_wage && (
-                                                        <div className="col-span-3">
-                                                            <ProfileField label="LCA Wage" value={`${fmt$(imm.lca_wage)}/yr`} />
-                                                        </div>
-                                                    )}
+                            {immigrations.length > 0 && (
+                                <Panel icon={Globe} title="Work authorization" subtitle={`${immigrations.length} record${immigrations.length !== 1 ? 's' : ''}`}>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {immigrations.map((imm, i) => (
+                                            <div key={imm.id || i} className="rounded-[18px] border border-(--border-subtle) bg-(--bg-app)/50 p-4">
+                                                <Chip tone="brand">{imm.status_name}</Chip>
+                                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                                    <Fact label="Start" value={fmtDate(imm.start_date)} />
+                                                    <Fact label="Till" value={fmtDate(imm.till_date)} />
+                                                    {imm.lca_wage && <Fact label="LCA wage" value={`${fmt$(imm.lca_wage)}/yr`} className="col-span-2" />}
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                )}
-
-                                <p className="text-[9px] text-(--text-muted) text-center font-bold uppercase tracking-widest pt-1">
-                                    Contact HR to update your information
-                                </p>
-                            </div>
-                        )}
+                                </Panel>
+                            )}
+                        </div>
                     </div>
-                )}
-            </div>
-
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {cards.map((card, i) => (
-                    <StatCard key={i} {...card} loading={loading} />
-                ))}
-            </div>
+                )
+            )}
         </div>
     );
 };

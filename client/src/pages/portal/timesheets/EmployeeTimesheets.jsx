@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Clock, AlertCircle, FileEdit, CheckCircle, XCircle, Filter } from 'lucide-react';
+import { Timer, AlertCircle, FileEdit, CheckCircle, XCircle, Layers, Hourglass, ClipboardCheck, Eye, Handshake } from 'lucide-react';
 import { timesheetAPI } from '../../../api/apiService';
 import SubmitTimesheetModal from './SubmitTimesheetModal';
 import { fmtDateGB, isBeforeEasternToday } from '../../../utils/dateUtils';
 import { rowOpen } from '../../../utils/rowClick';
+import { PageHero, StatRail, StatTile, SelectInput, Btn, Chip, RecordCard, EmptyState, LoadingState } from '../../../components/ui/kit';
+
+const TABS = [
+    { key: 'ALL',              label: 'All logs',  icon: Layers },
+    { key: 'NOT_SUBMITTED',    label: 'To submit', icon: Hourglass },
+    { key: 'PENDING_APPROVAL', label: 'In review', icon: ClipboardCheck },
+    { key: 'APPROVED',         label: 'Approved',  icon: CheckCircle },
+    { key: 'REJECTED',         label: 'Sent back', icon: XCircle },
+    { key: 'PAST_DUE',         label: 'Overdue',   icon: AlertCircle },
+];
 
 const EmployeeTimesheets = () => {
     const [searchParams] = useSearchParams();
@@ -26,7 +36,7 @@ const EmployeeTimesheets = () => {
             const res = await timesheetAPI.getEmployeeTimesheets();
             setTimesheets(res.data);
         } catch (err) {
-            console.error("Failed to fetch timesheets:", err);
+            console.error("Failed to fetch time logs:", err);
         } finally {
             setLoading(false);
         }
@@ -36,27 +46,24 @@ const EmployeeTimesheets = () => {
         fetchMyTimesheets();
     }, []);
 
-    // Extract unique client names directly
+    // Unique partner names for the filter
     const uniqueClients = Array.from(
         new Set(timesheets.map(t => t.client_name))
-    ).filter(Boolean); 
+    ).filter(Boolean);
 
     const isPastDue = (ts) => ts.status_id === 1 && isBeforeEasternToday(ts.end_date);
 
     const filteredTimesheets = timesheets.filter(t => {
-        // Uniform status filters
         if (filterTab === 'NOT_SUBMITTED' && (t.status_id !== 1 || isPastDue(t))) return false;
         if (filterTab === 'PENDING_APPROVAL' && t.status_id !== 2) return false;
         if (filterTab === 'APPROVED' && t.status_id !== 3) return false;
         if (filterTab === 'REJECTED' && t.status_id !== 4) return false;
         if (filterTab === 'PAST_DUE' && !isPastDue(t)) return false;
-        
-        // Filter exactly by client_name
+
         if (selectedClient !== 'ALL' && t.client_name !== selectedClient) return false;
         return true;
     });
 
-    // Tab Counts Calculation
     const tabCounts = {
         ALL: timesheets.length,
         NOT_SUBMITTED: timesheets.filter(t => t.status_id === 1 && !isPastDue(t)).length,
@@ -66,130 +73,80 @@ const EmployeeTimesheets = () => {
         PAST_DUE: timesheets.filter(t => isPastDue(t)).length
     };
 
-    const getStatusBadge = (ts) => {
-        if (ts.status_id === 2) return <span className="text-[10px] bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-orange-500/20">Pending Approval</span>;
-        if (ts.status_id === 3) return <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-green-500/20">Approved</span>;
-        if (ts.status_id === 4) return <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-red-500/20 flex items-center gap-1 w-max"><XCircle size={10}/> Rejected</span>;
-        if (isPastDue(ts)) return <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-red-500/20 flex items-center gap-1 w-max"><AlertCircle size={10}/> Past Due</span>;
-        return <span className="text-[10px] bg-(--bg-surface) text-(--text-muted) px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-(--border-subtle)">Not Submitted</span>;
+    const getStatusChip = (ts) => {
+        if (ts.status_id === 2) return <Chip tone="amber" icon={ClipboardCheck}>In review</Chip>;
+        if (ts.status_id === 3) return <Chip tone="green" icon={CheckCircle}>Approved</Chip>;
+        if (ts.status_id === 4) return <Chip tone="rose" icon={XCircle}>Sent back</Chip>;
+        if (isPastDue(ts)) return <Chip tone="rose" icon={AlertCircle}>Overdue</Chip>;
+        return <Chip tone="slate" icon={Hourglass}>To submit</Chip>;
     };
 
     return (
-        <div className="-mt-4 lg:-mt-8 -mx-4 lg:-mx-8 -mb-4 lg:-mb-8 flex flex-col h-[calc(100vh-4rem)] gap-2 animate-in fade-in duration-500">
-            
-            <div className="bg-(--bg-surface) px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-(--border-subtle) shadow-sm flex items-center shrink-0">
-                <div className="h-9 w-9 sm:h-10 sm:w-10 bg-(--brand-primary)/10 rounded-xl flex items-center justify-center text-(--brand-primary) shrink-0 mr-3">
-                    <Clock size={18} className="sm:w-5 sm:h-5" />
-                </div>
-                <div>
-                    <h1 className="text-base sm:text-lg font-bold uppercase tracking-tight text-(--text-main) leading-none">My Timesheets</h1>
-                    <p className="hidden sm:block text-[10px] text-(--text-muted) mt-1 uppercase tracking-widest font-bold">Log your hours and upload client approvals</p>
-                </div>
-            </div>
+        <div className="mx-auto max-w-[1400px] space-y-6">
+            <PageHero
+                icon={Timer}
+                eyebrow="My work"
+                title="My time logs"
+                description="Log your hours day by day and attach your partner's approval."
+            >
+                <StatRail>
+                    {TABS.map(tab => (
+                        <StatTile key={tab.key} label={tab.label} icon={tab.icon} value={tabCounts[tab.key]} active={filterTab === tab.key} onClick={() => setFilterTab(tab.key)} />
+                    ))}
+                </StatRail>
+            </PageHero>
 
-            <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm flex flex-col flex-1 overflow-hidden">
-                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 px-4 sm:px-6 py-4 lg:py-3 border-b border-(--border-subtle) bg-(--bg-app)/30 shrink-0">
-                    
-                    <div className="flex p-1 bg-(--bg-surface) rounded-xl lg:rounded-lg border border-(--border-subtle) w-full lg:w-auto shadow-sm overflow-x-auto hide-scrollbar">
-                        {[
-                            { key: 'ALL', label: 'All' },
-                            { key: 'NOT_SUBMITTED', label: 'Not Submitted' },
-                            { key: 'PENDING_APPROVAL', label: 'Pending Approval' },
-                            { key: 'APPROVED', label: 'Approved' },
-                            { key: 'REJECTED', label: 'Rejected' },
-                            { key: 'PAST_DUE', label: 'Past Due' }
-                        ].map((tab) => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setFilterTab(tab.key)}
-                                className={`flex-1 lg:flex-none whitespace-nowrap px-3 sm:px-4 py-2 lg:py-1.5 rounded-lg lg:rounded-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 outline-none ${filterTab === tab.key ? 'bg-(--brand-primary)/10 text-(--brand-primary)' : 'text-(--text-muted) hover:text-(--text-main)'}`}
-                            >
-                                {tab.label}
-                                <span className={`px-1.5 py-0.5 rounded-md text-[9px] leading-none transition-colors ${filterTab === tab.key ? 'bg-(--brand-primary) text-(--brand-primary-text)' : 'bg-(--border-subtle) text-(--text-muted)'}`}>
-                                    {tabCounts[tab.key]}
-                                </span>
-                            </button>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-(--text-muted)"><span className="font-semibold text-(--text-main)">{filteredTimesheets.length}</span> time log{filteredTimesheets.length !== 1 ? 's' : ''}</p>
+                {uniqueClients.length > 0 && (
+                    <SelectInput value={selectedClient} onChange={setSelectedClient} className="w-full sm:w-64">
+                        <option value="ALL">All partners</option>
+                        {uniqueClients.map(clientName => (
+                            <option key={clientName} value={clientName}>{clientName}</option>
                         ))}
-                    </div>
-
-                    {uniqueClients.length > 0 && (
-                        <div className="relative w-full sm:w-50 shrink-0 group">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-(--text-muted) group-focus-within:text-(--brand-primary) transition-colors">
-                                <Filter size={14} />
-                            </div>
-                            <select 
-                                value={selectedClient}
-                                onChange={(e) => setSelectedClient(e.target.value)}
-                                className="w-full pl-9 pr-8 py-2.5 sm:py-1.5 bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) rounded-xl sm:rounded-lg text-xs font-bold focus:border-(--brand-primary) focus:ring-1 focus:ring-(--brand-primary) outline-none shadow-sm appearance-none cursor-pointer"
-                            >
-                                <option value="ALL">All Clients</option>
-                                {uniqueClients.map(clientName => (
-                                    <option key={clientName} value={clientName}>{clientName}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-(--text-muted)">
-                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                    <table className="w-full text-left table-fixed">
-                        <thead className="bg-(--bg-app) text-[9px] sm:text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle) sticky top-0 z-10">
-                            <tr>
-                                <th className="px-4 sm:px-6 py-3 w-[28%] sm:w-[25%]">Period</th>
-                                <th className="px-4 py-3 w-[27%] sm:w-[30%]">Client</th>
-                                <th className="hidden sm:table-cell px-4 py-3 sm:w-[15%]">Total Hours</th>
-                                <th className="px-4 py-3 w-[25%] sm:w-[15%]">Status</th>
-                                <th className="px-4 sm:px-6 py-3 w-[20%] sm:w-[15%] text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm divide-y divide-(--border-subtle)">
-                            {loading ? <tr><td colSpan="5" className="text-center py-10 text-xs text-(--text-muted)">Loading timesheets...</td></tr> : filteredTimesheets.length > 0 ? (
-                                filteredTimesheets.map(t => (
-                                    <tr key={t.id}
-                                        onClick={rowOpen(() => setSelectedTimesheet(t))}
-                                        title={t.status_id === 1 || t.status_id === 4 ? 'Fill Timesheet' : 'View Details'}
-                                        className="hover:bg-(--bg-app) transition-colors group cursor-pointer">
-                                        <td className="px-4 sm:px-6 py-3 sm:py-3.5">
-                                            <div className="text-[10px] font-bold uppercase text-(--text-main) tracking-wider">
-                                                <p>{fmtDateGB(t.start_date)}</p>
-                                                <p className="mt-0.5 text-(--text-muted)">to {fmtDateGB(t.end_date)}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 sm:py-3.5">
-                                            <div className="min-w-0">
-                                                <p className="text-xs sm:text-sm font-bold tracking-tight text-(--text-main) truncate">{t.client_name}</p>
-                                            </div>
-                                        </td>
-                                        <td className="hidden sm:table-cell px-4 py-3 sm:py-3.5">
-                                            <span className="text-xs font-bold text-(--text-main) bg-(--bg-app) px-2 py-1 rounded border border-(--border-subtle)">
-                                                {Number(t.total_hours)} hrs
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 sm:py-3.5">{getStatusBadge(t)}</td>
-                                        <td className="px-4 sm:px-6 py-3 sm:py-3.5 text-right">
-                                            {t.status_id === 1 || t.status_id === 4 ? (
-                                                <button onClick={() => setSelectedTimesheet(t)} className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest rounded-lg bg-(--brand-primary) text-white shadow-sm hover:opacity-90 transition-all outline-none gap-1.5">
-                                                    <FileEdit size={12} className="hidden sm:block"/> Fill
-                                                </button>
-                                            ) : (
-                                                // Hidden on mobile — tapping the row shows the same thing.
-                                                <button onClick={() => setSelectedTimesheet(t)} className="hidden sm:inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) hover:bg-(--brand-primary) hover:text-white transition-all outline-none">
-                                                    View Details
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : <tr><td colSpan="5" className="px-4 py-12 text-center text-(--text-muted) text-xs font-bold uppercase tracking-widest">You are all caught up! No timesheets found.</td></tr>}
-                        </tbody>
-                    </table>
-                </div>
+                    </SelectInput>
+                )}
             </div>
+
+            {loading ? (
+                <LoadingState text="Loading time logs…" />
+            ) : filteredTimesheets.length === 0 ? (
+                <div className="rounded-[24px] border border-(--border-subtle) bg-(--bg-surface)">
+                    <EmptyState icon={CheckCircle} title="You're all caught up" text="No time logs in this view." />
+                </div>
+            ) : (
+                <div className="space-y-2.5">
+                    {filteredTimesheets.map(t => {
+                        const editable = t.status_id === 1 || t.status_id === 4;
+                        return (
+                            <RecordCard
+                                key={t.id}
+                                onClick={rowOpen(() => setSelectedTimesheet(t))}
+                                title={editable ? 'Fill time log' : 'View details'}
+                            >
+                                <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                                    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[16px] text-white" style={{ background: 'var(--brand-gradient)' }}>
+                                        <span className="text-lg font-semibold leading-none" style={{ fontFamily: 'var(--font-display)' }}>{Number(t.total_hours)}</span>
+                                        <span className="text-[10px] text-white/80">hrs</span>
+                                    </div>
+                                    <div className="min-w-[180px] flex-1">
+                                        <p className="text-sm font-semibold text-(--text-main)">{fmtDateGB(t.start_date)} → {fmtDateGB(t.end_date)}</p>
+                                        <p className="flex items-center gap-1.5 truncate text-xs text-(--text-muted)"><Handshake size={12} /> {t.client_name}</p>
+                                    </div>
+                                    {getStatusChip(t)}
+                                    <div className="ml-auto">
+                                        {editable ? (
+                                            <Btn size="sm" variant="primary" icon={FileEdit} onClick={() => setSelectedTimesheet(t)}>Fill</Btn>
+                                        ) : (
+                                            <Btn size="sm" icon={Eye} onClick={() => setSelectedTimesheet(t)}>View</Btn>
+                                        )}
+                                    </div>
+                                </div>
+                            </RecordCard>
+                        );
+                    })}
+                </div>
+            )}
 
             {selectedTimesheet && <SubmitTimesheetModal timesheet={selectedTimesheet} onClose={() => setSelectedTimesheet(null)} onRefresh={fetchMyTimesheets} />}
         </div>

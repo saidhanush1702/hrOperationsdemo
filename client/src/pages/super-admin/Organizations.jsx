@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Globe, ChevronRight } from 'lucide-react';
+import { Globe, Plus, Users, ArrowUpRight, ShieldCheck, ShieldOff, Layers } from 'lucide-react';
 import { superAdminAPI } from '../../api/apiService';
 import RegisterOrgModal from './RegisterOrgModal';
 import OrgDetailModal from './OrgDetailModal';
+import { matchesSearch } from '../../utils/searchMatch';
+import { PageHero, StatRail, StatTile, Btn, SearchInput, Chip, EmptyState, LoadingState } from '../../components/ui/kit';
 
 const Organizations = () => {
     const [orgs, setOrgs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [selectedOrg, setSelectedOrg] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [query, setQuery] = useState('');
 
     const fetchOrgs = async () => {
         try {
@@ -23,90 +27,70 @@ const Organizations = () => {
 
     useEffect(() => { fetchOrgs(); }, []);
 
+    const counts = {
+        ALL: orgs.length,
+        ACTIVE: orgs.filter(o => o.is_active).length,
+        SUSPENDED: orgs.filter(o => !o.is_active).length,
+    };
+
+    const visible = orgs.filter(o =>
+        (statusFilter === 'ALL' || (statusFilter === 'ACTIVE' ? o.is_active : !o.is_active))
+        && matchesSearch(query, o.name, o.domain)
+    );
+
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="mx-auto max-w-7xl space-y-6">
+            <PageHero
+                icon={Globe}
+                eyebrow="Platform"
+                title="Tenants"
+                description="Every workspace hosted on the platform, its owners and its access."
+                actions={<Btn variant="primary" icon={Plus} onClick={() => setIsRegisterOpen(true)}>Register tenant</Btn>}
+            >
+                <StatRail>
+                    <StatTile label="All tenants" icon={Layers} value={counts.ALL} active={statusFilter === 'ALL'} onClick={() => setStatusFilter('ALL')} />
+                    <StatTile label="Live" icon={ShieldCheck} value={counts.ACTIVE} active={statusFilter === 'ACTIVE'} onClick={() => setStatusFilter('ACTIVE')} />
+                    <StatTile label="Suspended" icon={ShieldOff} value={counts.SUSPENDED} active={statusFilter === 'SUSPENDED'} onClick={() => setStatusFilter('SUSPENDED')} />
+                </StatRail>
+            </PageHero>
 
-            <div className="flex justify-between items-center bg-(--bg-surface) p-8 rounded-2xl border border-(--border-subtle) shadow-sm transition-colors duration-300">
-                <div>
-                    <h1 className="text-2xl font-bold uppercase tracking-tight italic flex items-center gap-3 text-(--text-main) transition-colors duration-300">
-                        <Building2 size={28} /> Organization Directory
-                    </h1>
-                    <p className="text-sm text-(--text-muted) mt-1 uppercase tracking-widest font-medium transition-colors duration-300">
-                        Global Tenant Management & Infrastructure
-                    </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-(--text-muted)"><span className="font-semibold text-(--text-main)">{visible.length}</span> tenants</p>
+                <SearchInput value={query} onChange={setQuery} placeholder="Search tenant or domain…" className="w-full sm:w-72" />
+            </div>
+
+            {loading ? (
+                <LoadingState text="Loading tenants…" />
+            ) : visible.length === 0 ? (
+                <EmptyState icon={Globe} title={orgs.length === 0 ? 'No tenants registered yet' : 'No tenants match'} text="Register a tenant to create its workspace and owner account." />
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {visible.map(org => (
+                        <button
+                            key={org.id}
+                            type="button"
+                            onClick={() => setSelectedOrg(org)}
+                            className={`group relative overflow-hidden rounded-[24px] border border-(--border-subtle) bg-(--bg-surface) p-5 text-left outline-none transition-all hover:-translate-y-1 hover:border-(--brand-primary)/45 ${!org.is_active ? 'opacity-70' : ''}`}
+                        >
+                            <div aria-hidden="true" className="absolute -right-10 -top-10 h-32 w-32 rounded-full border border-(--brand-primary)/15" />
+                            <div className="relative flex items-start justify-between gap-3">
+                                <span className="flex h-12 w-12 items-center justify-center rounded-[15px] text-lg font-semibold text-white" style={{ background: 'var(--brand-gradient)' }}>
+                                    {(org.name || '?').slice(0, 1).toUpperCase()}
+                                </span>
+                                <Chip tone={org.is_active ? 'green' : 'rose'} icon={org.is_active ? ShieldCheck : ShieldOff}>
+                                    {org.is_active ? 'Live' : 'Suspended'}
+                                </Chip>
+                            </div>
+                            <p className="relative mt-4 truncate text-lg font-semibold text-(--text-main)" style={{ fontFamily: 'var(--font-display)' }}>{org.name}</p>
+                            <p className="relative flex items-center gap-1.5 truncate text-xs text-(--text-muted)"><Globe size={12} /> {org.domain || 'no-domain.com'}</p>
+                            <div className="relative mt-5 flex items-center justify-between border-t border-(--border-subtle) pt-3 text-xs text-(--text-muted)">
+                                <span className="flex items-center gap-1.5"><Users size={13} /> {org.admin_count ?? 0} owner{org.admin_count !== 1 ? 's' : ''}</span>
+                                <span className="flex items-center gap-1 font-semibold text-(--brand-primary)">Open <ArrowUpRight size={13} /></span>
+                            </div>
+                        </button>
+                    ))}
                 </div>
-                <button
-                    onClick={() => setIsRegisterOpen(true)}
-                    className="bg-(--brand-primary) text-(--brand-primary-text) px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all flex items-center gap-2 shadow-lg active:scale-95"
-                >
-                    <Plus size={16} /> Register New Org
-                </button>
-            </div>
-
-            <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm overflow-x-auto transition-colors duration-300">
-                <table className="w-full text-left">
-                    <thead className="bg-(--bg-app) text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle) transition-colors duration-300">
-                        <tr>
-                            <th className="px-4 sm:px-8 py-4 sm:py-5">Organization &amp; Domain</th>
-                            <th className="hidden sm:table-cell px-8 py-5">Admins</th>
-                            <th className="px-4 sm:px-8 py-4 sm:py-5">Status</th>
-                            <th className="px-4 sm:px-8 py-4 sm:py-5 text-right">Details</th>
-                        </tr>
-                    </thead>
-                    <tbody className="text-sm divide-y divide-(--border-subtle)">
-                        {loading ? (
-                            <tr>
-                                <td colSpan={4} className="px-4 sm:px-8 py-10 text-center text-(--text-muted) text-xs uppercase tracking-widest">
-                                    Loading organizations...
-                                </td>
-                            </tr>
-                        ) : orgs.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="px-4 sm:px-8 py-10 text-center text-(--text-muted) text-xs uppercase tracking-widest">
-                                    No organizations registered yet.
-                                </td>
-                            </tr>
-                        ) : orgs.map(org => (
-                            <tr
-                                key={org.id}
-                                onClick={() => setSelectedOrg(org)}
-                                className={`hover:bg-(--bg-app) transition-colors duration-200 cursor-pointer ${!org.is_active ? 'opacity-60' : ''}`}
-                            >
-                                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-(--bg-app) border border-(--border-subtle) flex items-center justify-center transition-colors duration-300">
-                                            <Building2 size={20} className="text-(--text-muted)" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-(--text-main) uppercase tracking-tight">{org.name}</p>
-                                            <div className="flex items-center gap-1 text-[10px] text-(--text-muted) font-bold uppercase">
-                                                <Globe size={10} /> {org.domain || 'no-domain.com'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="hidden sm:table-cell px-8 py-5">
-                                    <span className="text-xs font-bold text-(--text-muted)">
-                                        {org.admin_count ?? 0} admin{org.admin_count !== 1 ? 's' : ''}
-                                    </span>
-                                </td>
-                                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border transition-colors duration-300 ${
-                                        org.is_active
-                                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                            : 'bg-red-500/10 text-red-500 border-red-500/20'
-                                    }`}>
-                                        {org.is_active ? 'Active' : 'Suspended'}
-                                    </span>
-                                </td>
-                                <td className="px-4 sm:px-8 py-4 sm:py-5 text-right">
-                                    <ChevronRight size={16} className="text-(--text-muted) ml-auto" />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            )}
 
             <RegisterOrgModal
                 isOpen={isRegisterOpen}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, FileText, AlertTriangle, ExternalLink, Edit3, UploadCloud, X, Clock, RefreshCw, Info } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, AlertTriangle, ExternalLink, Edit3, UploadCloud, Timer, RefreshCw, Info, Handshake, CalendarDays, ShieldCheck } from 'lucide-react';
 import { timesheetAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
 import { fmtDateGB, getEasternDayOfWeek, getEasternDate, buildDailyLogSlots } from '../../../utils/dateUtils';
+import { Btn, Chip, Avatar, Notice, cx } from '../../../components/ui/kit';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -11,11 +12,11 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [actionError, setActionError] = useState('');
-    
+
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
-    const [isReopened, setIsReopened] = useState(false); 
-    
+    const [isReopened, setIsReopened] = useState(false);
+
     const [isOverrideMode, setIsOverrideMode] = useState(false);
     const [originalEntries, setOriginalEntries] = useState([]);
     const [overrideEntries, setOverrideEntries] = useState([]);
@@ -33,7 +34,7 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
                 setDetails(res.data);
                 setOriginalEntries(JSON.parse(JSON.stringify(res.data.entries || [])));
                 setOverrideEntries(JSON.parse(JSON.stringify(res.data.entries || [])));
-            } catch (err) {
+            } catch {
                 setActionError("Failed to load details.");
             } finally {
                 setLoading(false);
@@ -67,11 +68,11 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
 
     const handleEntryChange = (index, field, value) => {
         const newEntries = [...overrideEntries];
-        
+
         if (field === 'hours' && value !== '') {
             let intVal = parseInt(value, 10);
             if (isNaN(intVal)) intVal = 0;
-            
+
             if (intVal > 24) {
                 intVal = 24;
                 setActionError("Hours cannot be greater than 24.");
@@ -134,7 +135,7 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
         setActionError('');
 
         if (actionType === 'reject' && !rejectionReason.trim()) {
-            return setActionError("Please provide a reason for rejecting this timesheet.");
+            return setActionError("Please provide a reason for sending this time log back.");
         }
 
         setSubmitting(true);
@@ -158,7 +159,7 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
             onRefresh();
             onClose();
         } catch (err) {
-            setActionError(err.response?.data?.error || `Failed to ${actionType} timesheet.`);
+            setActionError(err.response?.data?.error || `Failed to ${actionType} time log.`);
             setSubmitting(false);
         }
     };
@@ -167,15 +168,12 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
 
     const isFinalized = (details?.status_id === 3 || details?.status_id === 4) && !isReopened;
     const isUnsubmittedOrPastDue = details?.status_id === 1 || details?.status_id === 5;
-    const documentUrl = details?.attachment_url
-        ? (details.attachment_url.startsWith('http') ? details.attachment_url : `${API_BASE}/${details.attachment_url.replace(/^\/+/, '')}`)
-        : null;
     const hasModifications = JSON.stringify(overrideEntries) !== JSON.stringify(originalEntries) || overrideFile !== null;
-    
-    // Determine if Approve/Reject should be shown. 
+
+    // Approve / send back are offered once there is something to decide on.
     const canFinalize = !isUnsubmittedOrPastDue || hasModifications;
 
-    const DAY_ABBR = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const cycleName = details?.cycle_name || '';
     const isWeeklyCycle = /^(weekly|semi-weekly)$/i.test(cycleName.trim());
@@ -184,209 +182,195 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
     const weekDays = Array.from({ length: 7 }, (_, i) => DAY_ABBR[(weekStartIdx + i) % 7]);
     const dailyLogSlots = buildDailyLogSlots(overrideEntries, weekStartIdx);
 
-    const modalFooter = isFinalized ? (
-        <div className="flex justify-between items-center w-full">
-            <span className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest">
-                This timesheet has already been {details?.status_id === 3 ? 'Approved' : 'Rejected'}.
-            </span>
-            <button onClick={() => setIsReopened(true)} className="bg-(--brand-primary)/10 text-(--brand-primary) border border-(--brand-primary)/20 px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm hover:bg-(--brand-primary) hover:text-white transition-all outline-none">
-                <RefreshCw size={14} /> Modify Decision
-            </button>
-        </div>
-    ) : (
-        <div className="flex flex-col w-full gap-3">
-            {actionError && (
-                <div className="w-full bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2">
-                    <AlertTriangle size={14} className="shrink-0" /><span>{actionError}</span>
-                </div>
-            )}
-            
-            {isRejecting ? (
-                <div className="w-full space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                    <textarea 
-                        placeholder="Reason for rejection..." 
-                        value={rejectionReason} 
-                        onChange={(e) => setRejectionReason(e.target.value)} 
-                        className="w-full p-3 bg-(--input-bg) text-(--input-text) border border-red-500/40 focus:border-red-500 rounded-lg text-xs outline-none transition-all resize-none h-24" 
-                    />
-                    <div className="flex justify-end gap-2">
-                        <button onClick={() => setIsRejecting(false)} className="px-4 py-2 text-[10px] font-bold uppercase text-(--text-muted) hover:text-(--text-main) outline-none">Cancel</button>
-                        <button onClick={() => handleAction('reject')} disabled={submitting || !rejectionReason.trim()} className="bg-red-500 text-white px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm hover:bg-red-600 disabled:opacity-50 outline-none">
-                            {submitting ? 'Processing...' : <><XCircle size={14}/> Confirm Rejection</>}
-                        </button>
-                    </div>
-                </div>
-            ) : isOverrideMode ? (
-                <div className="flex justify-between items-center w-full animate-in fade-in">
-                    <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded border border-orange-500/20">
-                        Override Mode Active
-                    </span>
-                    <div className="flex gap-3">
-                        <button onClick={handleCancelOverride} className="px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-(--text-muted) hover:text-(--text-main) transition-all outline-none">
-                            Cancel
-                        </button>
-                        <button onClick={handleSaveOverrideLocal} className="bg-orange-500 text-white px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm hover:bg-orange-600 transition-all outline-none">
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
-            ) : (
-                <div className="flex justify-between items-center w-full">
-                    <div>
-                        {hasModifications && (
-                            <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
-                                Modifications saved locally.
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex gap-3">
-                        <button onClick={() => setIsOverrideMode(true)} className="px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) hover:bg-(--brand-primary) hover:text-white transition-all outline-none flex items-center gap-1.5">
-                            <Edit3 size={14} /> Override
-                        </button>
-                        {canFinalize && (
-                            <>
-                                <button onClick={() => setIsRejecting(true)} className="px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all outline-none flex items-center gap-1.5">
-                                    <XCircle size={14} /> Reject
-                                </button>
-                                <button onClick={() => handleAction('approve')} disabled={submitting} className="bg-green-500 text-white px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm hover:bg-green-600 transition-all disabled:opacity-50 outline-none">
-                                    {submitting ? 'Processing...' : <><CheckCircle size={14} /> Approve</>}
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
+    const statusTone = details?.status_id === 2 ? 'amber' : details?.status_id === 3 ? 'green' : details?.status_id === 4 ? 'rose' : 'slate';
+
+    const uploadControl = (label) => (
+        <div className="flex flex-col items-center">
+            <input type="file" id="hrUpload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" onChange={(e) => setOverrideFile(e.target.files[0])} />
+            <label htmlFor="hrUpload" className="flex cursor-pointer items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-5 py-2 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/20">
+                <UploadCloud size={14} /> {label}
+            </label>
+            <p className="mt-2 text-[11px] text-(--text-muted)">Saved when you approve or send back</p>
         </div>
     );
 
     return (
         <BaseModal
-            isOpen={true} onClose={onClose} icon={<Clock size={16} />}
-            title="Timesheet Review"
-            footer={modalFooter}
+            isOpen={true}
+            onClose={onClose}
+            icon={<Timer size={18} />}
+            title="Time log review"
+            subtitle={`${timesheet.first_name} ${timesheet.last_name} · ${timesheet.client_name}`}
+            headerRight={isOverrideMode ? <Chip tone="amber" icon={Edit3}>Override mode</Chip> : null}
+            noPadding
         >
-            <div className="space-y-6">
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-(--bg-surface) rounded-xl border border-(--border-subtle) shadow-sm">
-                    <div className="sm:col-span-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Status</p>
-                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            details?.status_id === 2 ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20' : 
-                            details?.status_id === 3 ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 
-                            details?.status_id === 4 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 
-                            'bg-(--bg-app) text-(--text-muted) border border-(--border-subtle)'
-                        }`}>
-                            {details?.status_name || 'Loading'}
-                        </span>
+            <div className="grid min-h-full lg:grid-cols-[320px_minmax(0,1fr)]">
+                {/* Decision column */}
+                <aside className="space-y-4 border-b border-(--border-subtle) bg-(--bg-app)/40 p-5 lg:border-b-0 lg:border-r lg:p-6">
+                    <div className="flex items-center gap-3">
+                        <Avatar name={`${timesheet.first_name} ${timesheet.last_name}`} size={48} ring />
+                        <div className="min-w-0">
+                            <p className="truncate text-base font-semibold text-(--text-main)">{timesheet.first_name} {timesheet.last_name}</p>
+                            <p className="flex items-center gap-1.5 truncate text-xs text-(--text-muted)"><Handshake size={12} /> {timesheet.client_name}</p>
+                        </div>
                     </div>
-                    <div className="sm:col-span-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Employee</p>
-                        <p className="text-[11px] font-bold text-(--text-main) truncate">{timesheet.first_name} {timesheet.last_name}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                        <Chip tone={statusTone}>{details?.status_name || 'Loading'}</Chip>
+                        <Chip tone="brand">{timesheet.placement_code}</Chip>
                     </div>
-                    <div className="sm:col-span-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Client</p>
-                        <p className="text-[11px] font-bold text-(--text-main) truncate">{timesheet.client_name}</p>
-                    </div>
-                    <div className="sm:col-span-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Placement ID</p>
-                        <p className="text-[11px] font-bold text-(--text-main) truncate">{timesheet.placement_code}</p>
-                    </div>
-                </div>
 
-                {details?.status_id === 4 && details?.rejection_reason && (
-                    <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Previous Rejection Reason</span>
-                        <span className="text-xs font-bold text-(--text-main)">{details.rejection_reason}</span>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                    
-                    <div className="lg:col-span-2 bg-(--bg-app)/50 p-4 rounded-xl border border-(--border-subtle) flex flex-col">
-                        <div className="flex justify-between items-start border-b border-(--border-subtle) pb-2 mb-3">
+                    <div className="rounded-[20px] border border-(--border-subtle) bg-(--bg-surface) p-4">
+                        <p className="flex items-center gap-1.5 text-[11px] text-(--text-muted)"><CalendarDays size={12} /> Period</p>
+                        <p className="mt-0.5 text-sm font-semibold text-(--text-main)">{fmtDateGB(timesheet.start_date)} – {fmtDateGB(timesheet.end_date)}</p>
+                        <div className="mt-4 flex items-end justify-between">
                             <div>
-                                <h3 className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">Daily Log</h3>
-                                <p className="text-[10px] font-bold text-(--brand-primary) mt-1">
-                                    {fmtDateGB(timesheet.start_date)} - {fmtDateGB(timesheet.end_date)}
+                                <p className="text-[11px] text-(--text-muted)">Total hours</p>
+                                <p className={cx('text-4xl font-semibold', hasModifications ? 'text-amber-500' : 'text-(--text-main)')} style={{ fontFamily: 'var(--font-display)' }}>
+                                    {calculateOverrideTotal()}
                                 </p>
                             </div>
-                            <div className="flex items-center gap-3 mt-1">
-                                {isOverrideMode && (
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={regularHours}
-                                            onChange={(e) => handleRegularHours(e.target.checked)}
-                                            className="w-3 h-3 cursor-pointer accent-orange-500"
-                                        />
-                                        <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">Regular Hours</span>
-                                    </label>
-                                )}
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded border border-(--border-subtle) shadow-sm ${hasModifications ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-(--bg-surface) text-(--text-main)'}`}>
-                                    {calculateOverrideTotal()} hrs
-                                </span>
-                            </div>
+                            {hasModifications && <Chip tone="amber">Edited</Chip>}
                         </div>
-                        
-                        <div className="bg-(--border-subtle) grid grid-cols-7 gap-[1px] border border-(--border-subtle) rounded-lg overflow-hidden flex-none custom-scrollbar">
-                            {weekDays.map(day => <div key={day} className="bg-(--bg-app) py-1.5 text-center text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">{day}</div>)}
-                            
+                    </div>
+
+                    {details?.status_id === 4 && details?.rejection_reason && (
+                        <Notice tone="rose" icon={XCircle}><b>Previous reason:</b> {details.rejection_reason}</Notice>
+                    )}
+
+                    {isFinalized ? (
+                        <div className="space-y-3 rounded-[20px] border border-(--border-subtle) bg-(--bg-surface) p-4">
+                            <p className="text-sm text-(--text-muted)">
+                                This time log has already been {details?.status_id === 3 ? 'approved' : 'sent back'}.
+                            </p>
+                            <Btn variant="primary" icon={RefreshCw} className="w-full" onClick={() => setIsReopened(true)}>Modify decision</Btn>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {actionError && <Notice tone="rose" icon={AlertTriangle}>{actionError}</Notice>}
+
+                            {isRejecting ? (
+                                <div className="space-y-3 rounded-[20px] border border-rose-500/25 bg-rose-500/5 p-4">
+                                    <p className="text-sm font-semibold text-rose-500">Send back with a reason</p>
+                                    <textarea
+                                        placeholder="Reason for sending back…"
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                        className="nx-input h-24 resize-none"
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Btn onClick={() => setIsRejecting(false)}>Cancel</Btn>
+                                        <Btn variant="danger" icon={XCircle} onClick={() => handleAction('reject')} disabled={submitting || !rejectionReason.trim()}>
+                                            {submitting ? 'Processing…' : 'Confirm'}
+                                        </Btn>
+                                    </div>
+                                </div>
+                            ) : isOverrideMode ? (
+                                <div className="space-y-3 rounded-[20px] border border-amber-500/25 bg-amber-500/5 p-4">
+                                    <p className="text-sm font-semibold text-amber-600">Override mode</p>
+                                    <p className="text-xs text-(--text-muted)">Edit hours and notes on the calendar, or replace the approval file.</p>
+                                    <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-(--text-main)">
+                                        <input type="checkbox" checked={regularHours} onChange={(e) => handleRegularHours(e.target.checked)} className="h-4 w-4 cursor-pointer" />
+                                        Fill regular hours
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Btn onClick={handleCancelOverride}>Cancel</Btn>
+                                        <Btn variant="warn" onClick={handleSaveOverrideLocal}>Save changes</Btn>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {hasModifications && (
+                                        <Notice tone="amber" icon={Edit3}>Changes saved locally — approve or send back to submit them.</Notice>
+                                    )}
+                                    {canFinalize && (
+                                        <>
+                                            <Btn variant="success" icon={CheckCircle} className="w-full" onClick={() => handleAction('approve')} disabled={submitting}>
+                                                {submitting ? 'Processing…' : 'Approve'}
+                                            </Btn>
+                                            <Btn variant="danger" icon={XCircle} className="w-full" onClick={() => setIsRejecting(true)}>Send back</Btn>
+                                        </>
+                                    )}
+                                    <Btn icon={Edit3} className="w-full" onClick={() => setIsOverrideMode(true)}>Override</Btn>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </aside>
+
+                {/* Work area */}
+                <div className="min-w-0 space-y-5 p-4 sm:p-6 lg:p-8">
+                    {/* Daily log */}
+                    <section className="rounded-[24px] border border-(--border-subtle) bg-(--bg-surface) p-5">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-base font-semibold text-(--text-main)">Daily log</h3>
+                                <p className="text-xs text-(--text-muted)">{fmtDateGB(timesheet.start_date)} – {fmtDateGB(timesheet.end_date)}</p>
+                            </div>
+                            <span className={cx('rounded-full px-3 py-1 font-mono text-xs font-semibold', hasModifications ? 'bg-amber-500/10 text-amber-500' : 'bg-(--bg-app) text-(--text-main)')}>
+                                {calculateOverrideTotal()} h
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-1.5">
+                            {weekDays.map(day => (
+                                <div key={day} className="pb-1 text-center text-[11px] font-semibold text-(--text-muted)">{day}</div>
+                            ))}
+
                             {dailyLogSlots.map((slot, slotIdx) => {
-                                if (!slot) return <div key={`blank-${slotIdx}`} className="bg-(--bg-app)/30 h-[60px]"></div>;
+                                if (!slot) return <div key={`blank-${slotIdx}`} className="h-[84px] rounded-[14px] bg-(--bg-app)/30" />;
                                 const { entry, index: idx } = slot;
                                 const d = getEasternDate(entry.work_date);
                                 const dayOfWeek = getEasternDayOfWeek(entry.work_date);
-                                
+
                                 const hrsStr = entry.hours;
                                 const actualHrs = (hrsStr === '' || hrsStr === null || isNaN(parseInt(hrsStr, 10))) ? 0 : parseInt(hrsStr, 10);
-                                
+
                                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                                
+
                                 const needsNote = isWeekend ? actualHrs !== 0 : actualHrs !== 8;
                                 const tooltipText = isWeekend ? "Weekends expect 0 hours. Please add a note." : "Weekdays expect exactly 8 hours. Please add a note.";
 
                                 return (
-                                    <div key={entry.id} className={`bg-(--bg-surface) h-[60px] relative p-1 flex flex-col transition-colors group ${isOverrideMode ? 'hover:bg-(--bg-app)' : ''}`}>
-                                        
-                                        <div className="flex justify-center items-center relative mb-0.5 w-full">
-                                            <span className={`text-[10px] font-bold text-center ${actualHrs > 0 ? 'text-(--brand-primary)' : 'text-(--text-muted)'}`}>
-                                                {d}
-                                            </span>
+                                    <div
+                                        key={entry.id}
+                                        className={cx(
+                                            'relative flex h-[84px] flex-col rounded-[14px] border p-1.5 transition-colors',
+                                            actualHrs > 0 ? 'border-(--brand-primary)/30 bg-(--brand-primary)/5' : 'border-(--border-subtle) bg-(--bg-app)/40',
+                                            isOverrideMode && 'hover:border-amber-500/50',
+                                        )}
+                                    >
+                                        <div className="relative flex w-full items-center justify-center">
+                                            <span className={cx('text-[11px] font-semibold', actualHrs > 0 ? 'text-(--brand-primary)' : 'text-(--text-muted)')}>{d}</span>
                                             {isOverrideMode && needsNote && (
-                                                <div className="absolute right-0 top-0 text-orange-500 cursor-help" title={tooltipText}>
-                                                    <Info size={10} />
-                                                </div>
+                                                <span className="absolute right-0 top-0 cursor-help text-amber-500" title={tooltipText}><Info size={11} /></span>
                                             )}
                                         </div>
-                                        
-                                        <div className="flex-1 flex flex-col justify-center items-center gap-0.5">
+
+                                        <div className="flex flex-1 flex-col items-center justify-center gap-0.5">
                                             {isOverrideMode ? (
                                                 <>
-                                                    <div className="relative w-full px-1 flex justify-center">
-                                                        <input 
-                                                            type="number" step="1" min="0" max="24" placeholder="0" 
-                                                            value={entry.hours !== '' && entry.hours !== null ? Number(entry.hours) : ''} 
-                                                            onChange={(e) => handleEntryChange(idx, 'hours', e.target.value)} 
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-orange-500 text-[10px] font-bold text-center outline-none transition-colors" 
-                                                        />
-                                                    </div>
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder={needsNote ? "Note req..." : "Note"} 
-                                                        value={entry.notes || ''} 
-                                                        onChange={(e) => handleEntryChange(idx, 'notes', e.target.value)} 
-                                                        className={`w-full bg-transparent border-b text-[10px] text-center outline-none transition-colors px-0.5 ${needsNote && (!entry.notes || entry.notes.trim() === '') ? 'border-orange-500/50 text-orange-600 placeholder-orange-400 focus:border-orange-500' : 'border-transparent focus:border-orange-500 text-(--text-muted)'}`}
+                                                    <input
+                                                        type="number" step="1" min="0" max="24" placeholder="0"
+                                                        value={entry.hours !== '' && entry.hours !== null ? Number(entry.hours) : ''}
+                                                        onChange={(e) => handleEntryChange(idx, 'hours', e.target.value)}
+                                                        className="w-full border-b border-transparent bg-transparent text-center text-sm font-semibold text-(--text-main) outline-none focus:border-amber-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder={needsNote ? "Note req…" : "Note"}
+                                                        value={entry.notes || ''}
+                                                        onChange={(e) => handleEntryChange(idx, 'notes', e.target.value)}
+                                                        className={cx(
+                                                            'w-full border-b bg-transparent px-0.5 text-center text-[10px] outline-none',
+                                                            needsNote && (!entry.notes || entry.notes.trim() === '') ? 'border-amber-500/50 text-amber-600 placeholder-amber-400 focus:border-amber-500' : 'border-transparent text-(--text-muted) focus:border-amber-500',
+                                                        )}
                                                     />
                                                 </>
                                             ) : (
                                                 <>
-                                                    <span className={`text-[10px] font-bold ${actualHrs > 0 ? 'text-(--brand-primary) bg-(--brand-primary)/10 px-1.5 rounded' : 'text-(--text-muted) opacity-30'}`}>
-                                                        {actualHrs}h
-                                                    </span>
+                                                    <span className={cx('text-sm font-semibold', actualHrs > 0 ? 'text-(--text-main)' : 'text-(--text-muted) opacity-40')}>{actualHrs}h</span>
                                                     {entry.notes && (
-                                                        <span className="text-[10px] text-(--text-muted) text-center w-full px-0.5 line-clamp-2" title={entry.notes}>
-                                                            {entry.notes}
-                                                        </span>
+                                                        <span className="line-clamp-2 w-full px-0.5 text-center text-[10px] text-(--text-muted)" title={entry.notes}>{entry.notes}</span>
                                                     )}
                                                 </>
                                             )}
@@ -395,74 +379,53 @@ const ReviewTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
                                 );
                             })}
                         </div>
-                    </div>
+                    </section>
 
-                    <div className="lg:col-span-3 bg-(--bg-app)/50 p-4 rounded-xl border border-(--border-subtle) flex flex-col min-h-[300px]">
-                        <h3 className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle) pb-2 mb-3 flex items-center gap-1.5">
-                            <CheckCircle size={12} className="text-green-500" /> Mandatory Client Approval
-                        </h3>
-                        
+                    {/* Approval document */}
+                    <section className="flex min-h-[380px] flex-col rounded-[24px] border border-(--border-subtle) bg-(--bg-surface) p-5">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="flex items-center gap-2 text-base font-semibold text-(--text-main)">
+                                <ShieldCheck size={17} className="text-emerald-500" /> Partner approval
+                            </h3>
+                            {previewUrl && (
+                                <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-semibold text-(--brand-primary) outline-none hover:underline">
+                                    Open full screen <ExternalLink size={12} />
+                                </a>
+                            )}
+                        </div>
+
                         {previewUrl ? (
-                            <div className="flex flex-col border border-(--border-subtle) rounded-lg bg-(--bg-surface) overflow-hidden shadow-sm flex-1">
-                                <div className="bg-(--bg-app) px-3 py-2 flex justify-between items-center border-b border-(--border-subtle)">
-                                    <span className="text-[10px] font-bold text-(--text-main) uppercase tracking-widest">
-                                        {overrideFile ? 'Staged Preview' : 'Document Preview'}
-                                    </span>
-                                    <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-(--brand-primary) flex items-center gap-1 hover:underline outline-none">
-                                        Fullscreen <ExternalLink size={10} />
-                                    </a>
+                            <div className="flex flex-1 flex-col overflow-hidden rounded-[18px] border border-(--border-subtle)">
+                                <div className="flex items-center justify-between border-b border-(--border-subtle) bg-(--bg-app)/60 px-4 py-2 text-xs font-semibold text-(--text-muted)">
+                                    {overrideFile ? 'Staged replacement' : 'Stored document'}
                                 </div>
-                                
-                                <div className="bg-(--bg-app) flex justify-center items-center relative flex-1 min-h-[200px] overflow-hidden">
+                                <div className="relative flex min-h-[300px] flex-1 items-center justify-center overflow-hidden bg-[#0a0c16]">
                                     {isPdf ? (
-                                        <iframe src={previewUrl} className="w-full h-full border-0" title="Document Preview" />
+                                        <iframe src={previewUrl} className="h-full min-h-[300px] w-full border-0 bg-white" title="Document Preview" />
                                     ) : isImage ? (
-                                        <img src={previewUrl} alt="Approval Document" className="max-h-full max-w-full object-contain p-2" />
+                                        <img src={previewUrl} alt="Approval document" className="max-h-full max-w-full object-contain p-2" />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
-                                            <FileText size={32} className="text-(--text-muted)" />
-                                            <p className="text-[10px] font-bold text-(--text-main) break-all">{overrideFile?.name}</p>
-                                            <p className="text-[10px] text-(--text-muted) uppercase tracking-widest">Will be converted to PDF on save</p>
+                                            <FileText size={32} className="text-white/50" />
+                                            <p className="break-all text-xs font-semibold text-white">{overrideFile?.name}</p>
+                                            <p className="text-[11px] text-white/60">Will be converted to PDF on save</p>
                                         </div>
                                     )}
                                 </div>
-
                                 {isOverrideMode && (
-                                    <div className="p-3 border-t border-(--border-subtle) flex flex-col items-center bg-(--bg-surface)">
-                                        <input type="file" id="hrUpload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" onChange={(e) => setOverrideFile(e.target.files[0])} />
-                                        <label htmlFor="hrUpload" className="cursor-pointer bg-orange-500 text-white border border-orange-600 px-6 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-600 transition-all outline-none shadow-sm">
-                                            <UploadCloud size={14} /> Replace File
-                                        </label>
-                                        <p className="text-[10px] text-(--text-muted) mt-2 uppercase tracking-widest">
-                                            Will be saved upon Approval/Rejection
-                                        </p>
-                                    </div>
+                                    <div className="border-t border-(--border-subtle) p-3">{uploadControl('Replace file')}</div>
                                 )}
                             </div>
                         ) : (
-                            <div className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-(--bg-surface) p-6 text-center transition-colors ${isOverrideMode ? 'border-orange-500/50 bg-orange-500/5' : 'border-(--border-subtle)'}`}>
-                                <div className="h-10 w-10 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-3">
-                                    <AlertTriangle size={20} />
-                                </div>
-                                <p className="text-[11px] font-bold text-red-500 mb-1">Missing Attachment</p>
-                                <p className="text-[10px] text-(--text-muted) max-w-[200px] leading-relaxed mb-4">No approval document has been uploaded yet.</p>
-                                
-                                {isOverrideMode && (
-                                    <div>
-                                        <input type="file" id="hrUpload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" onChange={(e) => setOverrideFile(e.target.files[0])} />
-                                        <label htmlFor="hrUpload" className="cursor-pointer bg-orange-500 text-white border border-orange-600 px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-600 transition-all outline-none shadow-sm">
-                                            <UploadCloud size={14} /> Upload File
-                                        </label>
-                                        <p className="text-[10px] text-(--text-muted) mt-2 uppercase tracking-widest">
-                                            Will be saved upon Approval/Rejection
-                                        </p>
-                                    </div>
-                                )}
+                            <div className={cx('flex flex-1 flex-col items-center justify-center rounded-[18px] border-2 border-dashed p-6 text-center', isOverrideMode ? 'border-amber-500/50 bg-amber-500/5' : 'border-(--border-subtle)')}>
+                                <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-500"><AlertTriangle size={22} /></span>
+                                <p className="text-sm font-semibold text-rose-500">Approval missing</p>
+                                <p className="mb-4 mt-1 max-w-[240px] text-xs text-(--text-muted)">No partner approval document has been uploaded yet.</p>
+                                {isOverrideMode && uploadControl('Upload file')}
                             </div>
                         )}
-                    </div>
+                    </section>
                 </div>
-
             </div>
         </BaseModal>
     );

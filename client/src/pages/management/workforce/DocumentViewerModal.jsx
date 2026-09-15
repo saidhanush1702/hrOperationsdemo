@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, FileText, Trash2, FileSignature } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, FolderOpen, ImageIcon, Download } from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
-
 import { resolveFileUrl } from '../../../utils/fileUrl';
+import { cx } from '../../../components/ui/kit';
 
 const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
     const [documents, setDocuments] = useState([]);
@@ -16,7 +16,7 @@ const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
         if (employee?.id) {
             fetchDocuments();
         }
-    }, [employee?.id]);
+    }, [employee?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchDocuments = async () => {
         try {
@@ -41,7 +41,7 @@ const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
         try {
             await managementAPI.uploadEmployeeDocument(employee.id, formData);
             await fetchDocuments();
-        } catch (err) {
+        } catch {
             alert("Upload failed.");
         } finally {
             setIsUploading(false);
@@ -50,13 +50,13 @@ const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
     };
 
     const handleDelete = async (docId, e) => {
-        e.stopPropagation(); // Prevent clicking the row
+        e.stopPropagation(); // Prevent selecting the card
         if (window.confirm("Are you sure you want to delete this document?")) {
             try {
                 await managementAPI.deleteEmployeeDocument(docId);
                 if (selectedDoc?.id === docId) setSelectedDoc(null);
                 fetchDocuments();
-            } catch (err) {
+            } catch {
                 alert("Failed to delete document.");
             }
         }
@@ -68,72 +68,97 @@ const DocumentViewerModal = ({ isOpen = true, employee, onClose }) => {
         <BaseModal
             isOpen={isOpen}
             onClose={onClose}
-            icon={<FileSignature size={16} />}
-            title="Employee Documents"
+            icon={<FolderOpen size={18} />}
+            title="Document vault"
             subtitle={`${employee.first_name} ${employee.last_name}`}
-            noPadding={true} // Removes the p-8 so the split layout touches edges
+            noPadding={true}
         >
-            <div className="flex w-full h-full overflow-hidden">
-                
-                {/* LEFT SIDEBAR - 1/4 Width */}
-                <div className="w-1/4 border-r border-(--border-subtle) bg-(--bg-app) flex flex-col p-4 overflow-y-auto shrink-0">
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileUpload} 
-                        className="hidden" 
-                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" 
+            <div className="flex h-full w-full flex-col overflow-hidden">
+                {/* Upload + file shelf */}
+                <div className="shrink-0 border-b border-(--border-subtle) p-4 sm:p-5">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     />
-                    <button 
-                        onClick={() => fileInputRef.current.click()} 
-                        disabled={isUploading}
-                        className="w-full flex items-center justify-center gap-2 bg-(--brand-primary) text-(--brand-primary-text) py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm hover:opacity-90 transition-all mb-4 disabled:opacity-50"
-                    >
-                        <Upload size={14} /> {isUploading ? "Uploading..." : "Upload Document"}
-                    </button>
-
-                    <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest mb-2 px-1">Files</h3>
-                        {documents.length === 0 ? (
-                            <p className="text-xs text-(--text-muted) italic text-center mt-4">No documents uploaded.</p>
-                        ) : (
-                            documents.map(doc => (
-                                <div 
-                                    key={doc.id} 
-                                    onClick={() => setSelectedDoc(doc)}
-                                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-colors border ${selectedDoc?.id === doc.id ? 'bg-(--brand-primary)/10 border-(--brand-primary)' : 'bg-(--bg-surface) border-(--border-subtle) hover:border-(--brand-primary)/50'}`}
-                                >
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText size={14} className={`shrink-0 ${selectedDoc?.id === doc.id ? 'text-(--brand-primary)' : 'text-(--text-muted)'}`} />
-                                        <span className="text-xs font-semibold text-(--text-main) truncate">{doc.file_name}</span>
-                                    </div>
-                                    {userRole === 'ORG_ADMIN' && (
-                                        <button onClick={(e) => handleDelete(doc.id, e)} className="text-(--text-muted) hover:text-red-500 transition-colors p-1 shrink-0 ml-2">
-                                            <Trash2 size={12} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))
-                        )}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current.click()}
+                            disabled={isUploading}
+                            className="flex items-center gap-3 rounded-[18px] border-2 border-dashed border-(--brand-primary)/35 bg-(--brand-primary)/5 px-4 py-3 text-left outline-none transition-colors hover:border-(--brand-primary) disabled:opacity-60"
+                        >
+                            <span className="flex h-10 w-10 items-center justify-center rounded-[12px] text-white" style={{ background: 'var(--brand-gradient)' }}>
+                                <UploadCloud size={18} />
+                            </span>
+                            <span>
+                                <span className="block text-sm font-semibold text-(--text-main)">{isUploading ? 'Uploading…' : 'Add a file'}</span>
+                                <span className="block text-xs text-(--text-muted)">PDF, images or Word documents</span>
+                            </span>
+                        </button>
+                        <p className="ml-auto text-sm text-(--text-muted)">
+                            <span className="font-semibold text-(--text-main)">{documents.length}</span> files stored
+                        </p>
                     </div>
+
+                    {documents.length > 0 && (
+                        <div className="hide-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1">
+                            {documents.map(doc => {
+                                const on = selectedDoc?.id === doc.id;
+                                const isImage = doc.file_type?.includes('image');
+                                return (
+                                    <div
+                                        key={doc.id}
+                                        onClick={() => setSelectedDoc(doc)}
+                                        className={cx(
+                                            'flex w-60 shrink-0 cursor-pointer items-center gap-3 rounded-[16px] border px-3 py-2.5 transition-colors',
+                                            on ? 'border-(--brand-primary) bg-(--brand-primary)/10' : 'border-(--border-subtle) bg-(--bg-surface) hover:border-(--brand-primary)/50',
+                                        )}
+                                    >
+                                        <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]', on ? 'text-white' : 'bg-(--text-main)/5 text-(--text-muted)')} style={on ? { background: 'var(--brand-gradient)' } : undefined}>
+                                            {isImage ? <ImageIcon size={16} /> : <FileText size={16} />}
+                                        </span>
+                                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-(--text-main)">{doc.file_name}</span>
+                                        {userRole === 'ORG_ADMIN' && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleDelete(doc.id, e)}
+                                                className="shrink-0 rounded-full p-1.5 text-(--text-muted) transition-colors hover:bg-rose-500/10 hover:text-rose-500"
+                                                title="Delete file"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
-                {/* RIGHT PREVIEW - 3/4 Width */}
-                <div className="flex-1 bg-[#1A1A1A] flex items-center justify-center p-4 relative overflow-hidden">
+                {/* Preview stage */}
+                <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#0a0c16] p-4">
                     {selectedDoc ? (
                         selectedDoc.file_type.includes('image') ? (
-                            <img src={resolveFileUrl(selectedDoc.file_url)} alt={selectedDoc.file_name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                            <img src={resolveFileUrl(selectedDoc.file_url)} alt={selectedDoc.file_name} className="max-h-full max-w-full rounded-[14px] object-contain shadow-2xl" />
                         ) : selectedDoc.file_type.includes('pdf') ? (
-                            <iframe src={resolveFileUrl(selectedDoc.file_url)} className="w-full h-full rounded-lg bg-white" title="PDF Preview"></iframe>
+                            <iframe src={resolveFileUrl(selectedDoc.file_url)} className="h-full w-full rounded-[14px] bg-white" title="PDF Preview"></iframe>
                         ) : (
                             <div className="text-center">
-                                <FileText size={48} className="mx-auto text-(--text-muted) mb-4" />
-                                <p className="text-white text-sm">Preview not available for this file type.</p>
-                                <a href={resolveFileUrl(selectedDoc.file_url)} download className="text-(--brand-primary) hover:underline text-xs mt-2 block">Download File</a>
+                                <FileText size={44} className="mx-auto mb-4 text-white/40" />
+                                <p className="text-sm text-white/80">Preview is not available for this file type.</p>
+                                <a href={resolveFileUrl(selectedDoc.file_url)} download className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-white hover:border-white/40">
+                                    <Download size={13} /> Download file
+                                </a>
                             </div>
                         )
                     ) : (
-                        <p className="text-(--text-muted) text-sm font-semibold uppercase tracking-widest">Select a document to preview</p>
+                        <div className="text-center text-white/50">
+                            <FolderOpen size={40} className="mx-auto mb-3 opacity-60" />
+                            <p className="text-sm">{documents.length === 0 ? 'No files uploaded yet.' : 'Select a file to preview.'}</p>
+                        </div>
                     )}
                 </div>
             </div>

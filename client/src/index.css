@@ -207,6 +207,40 @@ input[type="number"] {
 }
 
 /* =============================================================================
+   FORM CONTROLS (kit) — in the components layer so utilities can still adjust them
+   ============================================================================= */
+@layer components {
+  .nx-input {
+    width: 100%;
+    min-height: 2.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    padding: 0 0.9rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  textarea.nx-input { padding: 0.65rem 0.9rem; line-height: 1.5; }
+  .nx-input::placeholder { color: var(--input-placeholder); }
+  .nx-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+  }
+  .nx-input:disabled,
+  .nx-input[readonly] { opacity: 0.65; cursor: not-allowed; }
+  .nx-input.nx-invalid { border-color: rgb(244 63 94 / 0.7); }
+  .nx-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}
+
+/* =============================================================================
    SHARED MOTION + EFFECTS
    ============================================================================= */
 @keyframes nx-pop {

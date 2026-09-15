@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    LayoutDashboard, Building2, Building, Users, Briefcase, Clock, FileText, Wallet,
-    Settings, Receipt, Scale, ChevronDown, Menu, X, Sun, Moon, RefreshCw, LogOut, ArrowUpRight,
+    Gauge, Globe, Users, Handshake, Rocket, Timer, SlidersHorizontal, Receipt, Banknote,
+    BookOpen, ScanSearch, Settings2, ChevronDown, Menu, X, Sun, Moon, RefreshCw, LogOut, ArrowUpRight,
 } from 'lucide-react';
 import { managementAPI, portalAPI } from '../../api/apiService';
 import { resolveFileUrl } from '../../utils/fileUrl';
+import { PATHS, roleLabel as labelForRole } from '../../utils/constants';
 import BrandMark from '../brand/BrandMark';
 
 const GROUPS = [
     { key: 'overview', label: 'Overview' },
-    { key: 'tenants',  label: 'Tenants' },
+    { key: 'tenants',  label: 'Platform' },
     { key: 'talent',   label: 'Talent' },
-    { key: 'finance',  label: 'Finance' },
-    { key: 'admin',    label: 'Admin' },
+    { key: 'finance',  label: 'Money' },
+    { key: 'admin',    label: 'Workspace' },
     { key: 'me',       label: 'My Work' },
 ];
 
@@ -134,7 +135,7 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
     const displayName = (userName && userName !== 'undefined' && userName !== 'null' && userName.trim() !== '')
         ? userName
         : 'User Profile';
-    const roleLabel = userRole?.replace('_', ' ') || '';
+    const roleLabel = labelForRole(userRole);
 
     const [orgLogoUrl, setOrgLogoUrl] = useState(() => localStorage.getItem('orgLogoUrl') || null);
     const [orgName,    setOrgName]    = useState(() => localStorage.getItem('orgName')    || 'SYSTEM');
@@ -189,31 +190,31 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
     }, [openMenu, mobileOpen]);
 
     // ── Navigation items ──────────────────────────────────────────────────────
-    // HR sees: Dashboard, Workforce, Clients, Placements, Timesheets
-    // ORG_ADMIN / ACCOUNTANT sees: all management items including Invoices, Payroll, Balance Sheet, Organisation
+    // Talent Ops sees: Overview, Talent, Partners, Engagements, Time Logs
+    // Workspace Admin / Finance Lead also see the Money group; Admin also sees Pay Audit and Workspace
     const items = useMemo(() => {
         const isManagement = ['ORG_ADMIN', 'HR', 'ACCOUNTANT'].includes(userRole);
-        const dashboardPath =
-            userRole === 'SUPER_ADMIN' ? '/super-admin/dashboard' :
-            isManagement               ? '/management/dashboard'  :
-            '/portal/dashboard';
+        const overviewPath =
+            userRole === 'SUPER_ADMIN' ? PATHS.platformOverview :
+            isManagement               ? PATHS.overview         :
+            PATHS.myOverview;
 
         const all = [
-            { title: 'Dashboard',        icon: LayoutDashboard, path: dashboardPath,                 group: 'overview', blurb: 'Live pulse of your operation',              roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'ACCOUNTANT', 'EMPLOYEE'] },
-            { title: 'Organisations',    icon: Building2,       path: '/super-admin/organizations',   group: 'tenants',  blurb: 'Tenants, admins and access',                roles: ['SUPER_ADMIN'] },
-            { title: 'Workforce',        icon: Users,           path: '/management/workforce',        group: 'talent',   blurb: 'Employee records, documents & immigration', roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
-            { title: 'Clients',          icon: Building,        path: '/management/clients',          group: 'talent',   blurb: 'Client accounts, contacts & terms',         roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
-            { title: 'Placements',       icon: Briefcase,       path: '/management/placements',       group: 'talent',   blurb: 'Assignments with bill & pay rates',         roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
-            { title: 'Timesheets',       icon: Clock,           path: '/management/timesheets',       group: 'talent',   blurb: 'Submission, approval & overrides',          roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
-            { title: 'Invoice Settings', icon: Settings,        path: '/management/invoice-settings', group: 'finance',  blurb: 'Terms, contacts & notes per placement',     roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
-            { title: 'Invoices',         icon: FileText,        path: '/management/invoices',         group: 'finance',  blurb: 'Generate, send & collect',                  roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
-            { title: 'Payroll',          icon: Receipt,         path: '/management/payroll',          group: 'finance',  blurb: 'Payroll runs & adjustments',                roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
-            { title: 'Balance Sheet',    icon: Wallet,          path: '/management/balance-sheet',    group: 'finance',  blurb: 'Employee ledgers & C2C balances',           roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
-            { title: 'Reconcile',        icon: Scale,           path: '/management/reconcile',        group: 'finance',  blurb: 'Earned versus paid',                        roles: ['ORG_ADMIN'] },
-            { title: 'Organisation',     icon: Building2,       path: '/management/organisation',     group: 'admin',    blurb: 'Branding, accounts email & team',           roles: ['ORG_ADMIN'] },
-            { title: 'My Placements',    icon: Briefcase,       path: '/portal/placements',           group: 'me',       blurb: 'Your current assignments',                  roles: ['EMPLOYEE'] },
-            { title: 'My Timesheets',    icon: Clock,           path: '/portal/timesheets',           group: 'me',       blurb: 'Log and submit hours',                      roles: ['EMPLOYEE'] },
-            { title: 'Balance Sheet',    icon: Wallet,          path: '/portal/balance-sheet',        group: 'me',       blurb: 'Your earnings ledger',                      roles: ['EMPLOYEE'] },
+            { title: 'Overview',        icon: Gauge,             path: overviewPath,       group: 'overview', blurb: 'Live pulse of your operation',            roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'ACCOUNTANT', 'EMPLOYEE'] },
+            { title: 'Tenants',         icon: Globe,             path: PATHS.tenants,      group: 'tenants',  blurb: 'Workspaces, owners and access',            roles: ['SUPER_ADMIN'] },
+            { title: 'Talent',          icon: Users,             path: PATHS.talent,       group: 'talent',   blurb: 'Consultant profiles, files & authorization', roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
+            { title: 'Partners',        icon: Handshake,         path: PATHS.partners,     group: 'talent',   blurb: 'Partner accounts, contacts & terms',       roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
+            { title: 'Engagements',     icon: Rocket,            path: PATHS.engagements,  group: 'talent',   blurb: 'Consultant assignments & rates',           roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
+            { title: 'Time Logs',       icon: Timer,             path: PATHS.timeLogs,     group: 'talent',   blurb: 'Hours, approvals & overrides',             roles: ['ORG_ADMIN', 'HR', 'ACCOUNTANT'] },
+            { title: 'Billing Rules',   icon: SlidersHorizontal, path: PATHS.billingRules, group: 'finance',  blurb: 'Terms, contacts & notes per engagement',   roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
+            { title: 'Billing',         icon: Receipt,           path: PATHS.billing,      group: 'finance',  blurb: 'Create, send & collect invoices',          roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
+            { title: 'Pay Runs',        icon: Banknote,          path: PATHS.payRuns,      group: 'finance',  blurb: 'Run pay cycles & adjustments',             roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
+            { title: 'Earnings Ledger', icon: BookOpen,          path: PATHS.ledger,       group: 'finance',  blurb: 'Consultant ledgers & C2C balances',        roles: ['ORG_ADMIN', 'ACCOUNTANT'] },
+            { title: 'Pay Audit',       icon: ScanSearch,        path: PATHS.payAudit,     group: 'finance',  blurb: 'Earned versus paid',                       roles: ['ORG_ADMIN'] },
+            { title: 'Workspace',       icon: Settings2,         path: PATHS.workspace,    group: 'admin',    blurb: 'Branding, billing email & team',           roles: ['ORG_ADMIN'] },
+            { title: 'My Engagements',  icon: Rocket,            path: PATHS.myEngagements, group: 'me',      blurb: 'Your current assignments',                 roles: ['EMPLOYEE'] },
+            { title: 'My Time Logs',    icon: Timer,             path: PATHS.myTimeLogs,   group: 'me',       blurb: 'Log and submit hours',                     roles: ['EMPLOYEE'] },
+            { title: 'My Ledger',       icon: BookOpen,          path: PATHS.myLedger,     group: 'me',       blurb: 'Your earnings ledger',                     roles: ['EMPLOYEE'] },
         ];
         return all.filter(item => item.roles.includes(userRole));
     }, [userRole]);
@@ -245,7 +246,7 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
             {orgLogoUrl ? (
                 <img
                     src={resolveFileUrl(orgLogoUrl)}
-                    alt="Org Logo"
+                    alt="Workspace logo"
                     className="h-9 w-9 shrink-0 rounded-[11px] bg-white object-contain p-1 ring-1 ring-(--border-subtle)"
                 />
             ) : (
@@ -334,7 +335,7 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
                             </span>
                             <span className="hidden flex-col text-left leading-tight xl:flex">
                                 <span className="max-w-[120px] truncate text-xs font-semibold text-(--text-main)" title={displayName}>{displayName}</span>
-                                <span className="font-mono text-[10px] uppercase text-(--text-muted)">{roleLabel}</span>
+                                <span className="text-[10px] text-(--text-muted)">{roleLabel}</span>
                             </span>
                         </button>
 
@@ -349,7 +350,7 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
                                 >
                                     <p className="text-xs text-(--text-muted)">Welcome,</p>
                                     <p className="truncate text-base font-semibold text-(--text-main)">{userName || roleLabel}</p>
-                                    <span className="mt-2 inline-flex rounded-full bg-(--bg-surface) px-2.5 py-1 font-mono text-[10px] uppercase text-(--brand-primary)">{roleLabel}</span>
+                                    <span className="mt-2 inline-flex rounded-full bg-(--bg-surface) px-2.5 py-1 text-[11px] font-semibold text-(--brand-primary)">{roleLabel}</span>
                                     <p className="mt-3 truncate text-xs text-(--text-muted)">{orgName}</p>
                                 </div>
                                 <button
@@ -386,7 +387,7 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
                         <div className="mt-4 flex items-center justify-between gap-3 rounded-[16px] border border-(--border-subtle) px-4 py-3">
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-(--text-main)">Welcome, {userName || roleLabel}</p>
-                                <p className="font-mono text-[10px] uppercase text-(--brand-primary)">{roleLabel}</p>
+                                <p className="text-[11px] text-(--brand-primary)">{roleLabel}</p>
                             </div>
                             <div className="text-right font-mono text-[11px] tabular-nums text-(--text-muted)">
                                 <p>{easternTime.date}</p>

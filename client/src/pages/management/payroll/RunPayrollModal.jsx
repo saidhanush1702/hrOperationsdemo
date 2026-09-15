@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { PlayCircle, X, Loader2 } from 'lucide-react';
+import { PlayCircle, Loader2, AlertTriangle, CalendarRange } from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import { getEasternDateString } from '../../../utils/dateUtils';
+import BaseModal from '../../../components/ui/BaseModal';
+import { Btn, Notice, cx } from '../../../components/ui/kit';
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -63,113 +64,92 @@ const RunPayrollModal = ({ onClose, onGenerated }) => {
             });
             onGenerated(res.data);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to generate payroll. Please try again.');
+            setError(err.response?.data?.error || 'Failed to generate the pay run. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-(--bg-surface) w-full max-w-md rounded-2xl shadow-2xl border border-(--border-subtle) overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    const selected = selectedPeriodIdx !== '' ? periods[parseInt(selectedPeriodIdx)] : null;
 
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-(--border-subtle) bg-(--bg-app)">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-(--brand-primary) rounded-xl flex items-center justify-center text-(--brand-primary-text) shadow-sm">
-                            <PlayCircle size={16} />
-                        </div>
-                        <div>
-                            <h2 className="font-bold uppercase tracking-tight text-(--text-main) leading-none text-base">
-                                Run Payroll
-                            </h2>
-                            <p className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">
-                                Select pay period
-                            </p>
-                        </div>
+    const footer = (
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-(--text-muted)">
+                {selected ? <>Period <b className="text-(--text-main)">{selected.label}, {year}</b></> : 'Pick a half-month period'}
+            </span>
+            <div className="flex gap-2">
+                <Btn onClick={onClose} disabled={loading}>Cancel</Btn>
+                <Btn type="submit" form="runPayForm" variant="primary" icon={loading ? Loader2 : PlayCircle} disabled={loading}>
+                    {loading ? 'Generating…' : 'Generate'}
+                </Btn>
+            </div>
+        </div>
+    );
+
+    return (
+        <BaseModal
+            isOpen={true}
+            onClose={loading ? undefined : onClose}
+            icon={<PlayCircle size={18} />}
+            title="Start a pay run"
+            subtitle="An existing run for the period opens instead of creating a new one"
+            footer={footer}
+        >
+            <form id="runPayForm" onSubmit={handleSubmit} className="space-y-6">
+                {error && <Notice tone="rose" icon={AlertTriangle}>{error}</Notice>}
+
+                <div>
+                    <p className="nx-label">Year</p>
+                    <div className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                        {YEAR_OPTIONS.map(y => {
+                            const on = String(y) === year;
+                            return (
+                                <button
+                                    key={y}
+                                    type="button"
+                                    disabled={loading}
+                                    onClick={() => setYear(String(y))}
+                                    className={cx('h-9 shrink-0 rounded-full border px-4 font-mono text-sm outline-none transition-colors', on ? 'border-transparent text-white' : 'border-(--border-subtle) text-(--text-main) hover:border-(--brand-primary)/45')}
+                                    style={on ? { background: 'var(--brand-gradient)' } : undefined}
+                                >
+                                    {y}
+                                </button>
+                            );
+                        })}
                     </div>
-                    <button
-                        onClick={onClose}
-                        disabled={loading}
-                        className="text-(--text-muted) hover:text-(--text-main) transition-colors outline-none"
-                    >
-                        <X size={20} />
-                    </button>
                 </div>
 
-                {/* Body */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    <p className="text-xs text-(--text-muted) font-medium">
-                        Select the 15-day pay period and year. If payroll for this period was already generated it will be shown; otherwise a new run will be created.
-                    </p>
-
-                    {error && (
-                        <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200 font-bold">
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Period dropdown */}
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">
-                            Pay Period
-                        </label>
-                        <select
-                            value={selectedPeriodIdx}
-                            onChange={(e) => setSelectedPeriodIdx(e.target.value)}
-                            disabled={loading}
-                            className="w-full px-3 py-2.5 bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) rounded-xl text-sm font-bold focus:border-(--brand-primary) outline-none shadow-sm"
-                        >
-                            <option value="">— Select a period —</option>
-                            {periods.map((p, i) => (
-                                <option key={i} value={i}>{p.label}</option>
-                            ))}
-                        </select>
+                <div>
+                    <p className="nx-label flex items-center gap-1.5"><CalendarRange size={13} /> Pay period</p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        {MONTH_ABBR.map((month, m) => (
+                            <div key={month} className="rounded-[18px] border border-(--border-subtle) bg-(--bg-surface) p-2">
+                                <p className="px-1.5 pb-1.5 text-xs font-semibold text-(--text-muted)">{month}</p>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {[m * 2, m * 2 + 1].map(idx => {
+                                        const on = String(idx) === selectedPeriodIdx;
+                                        const p = periods[idx];
+                                        return (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                disabled={loading}
+                                                onClick={() => setSelectedPeriodIdx(String(idx))}
+                                                className={cx('rounded-[12px] px-2 py-2 text-xs font-semibold outline-none transition-colors', on ? 'text-white' : 'bg-(--bg-app)/60 text-(--text-main) hover:bg-(--brand-primary)/10')}
+                                                style={on ? { background: 'var(--brand-gradient)' } : undefined}
+                                                title={p.label}
+                                            >
+                                                {p.label.replace(`${month} `, '')}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-
-                    {/* Year input */}
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">
-                            Year
-                        </label>
-                        <select
-                            value={year}
-                            onChange={(e) => setYear(e.target.value)}
-                            disabled={loading}
-                            className="w-full px-3 py-2.5 bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) rounded-xl text-sm font-bold focus:border-(--brand-primary) outline-none shadow-sm"
-                        >
-                            {YEAR_OPTIONS.map(y => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={loading}
-                            className="px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-(--text-main) bg-(--bg-app) border border-(--border-subtle) rounded-xl hover:opacity-80 outline-none transition-all disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-(--brand-primary-text) bg-(--brand-primary) rounded-xl hover:opacity-90 outline-none transition-all disabled:opacity-50 shadow-sm active:scale-95"
-                        >
-                            {loading ? (
-                                <><Loader2 size={14} className="animate-spin" /> Generating...</>
-                            ) : (
-                                <><PlayCircle size={14} /> Generate</>
-                            )}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>,
-        document.body
+                </div>
+            </form>
+        </BaseModal>
     );
 };
 

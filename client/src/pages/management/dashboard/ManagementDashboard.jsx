@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Briefcase, Clock, CalendarX, FileText, FileWarning, TrendingUp, Cake, Trophy, Plane, ArrowUpRight, CalendarDays, Activity } from 'lucide-react';
+import { Users, Rocket, ClipboardCheck, CalendarX, Send, FileWarning, TrendingUp, Cake, Trophy, Plane, ArrowUpRight, CalendarDays, Activity } from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import { fmtDate } from '../../../utils/dateUtils';
+import { PATHS, roleLabel } from '../../../utils/constants';
 
 const fmt$ = (v) => `$${parseFloat(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -47,7 +48,7 @@ const StatCard = ({ label, value, icon: Icon, colorClass, subLabel, loading, onC
     </div>
 );
 
-const InfoSection = ({ icon: Icon, title, colorClass, children, emptyText }) => (
+const InfoSection = ({ icon: Icon, title, colorClass, children }) => (
     <div className="overflow-hidden rounded-[22px] border border-(--border-subtle) bg-(--bg-surface) transition-colors duration-300">
         <div className="flex items-center gap-3 border-b border-(--border-subtle) px-5 py-4">
             <span className={`relative flex h-9 w-9 items-center justify-center rounded-[12px] ${colorClass}`}>
@@ -56,12 +57,7 @@ const InfoSection = ({ icon: Icon, title, colorClass, children, emptyText }) => 
             </span>
             <h2 className="text-[15px] font-semibold text-(--text-main)">{title}</h2>
         </div>
-        <div className="p-3">
-            {children}
-            {!children && (
-                <p className="py-3 text-center text-sm text-(--text-muted)">{emptyText}</p>
-            )}
-        </div>
+        <div className="p-3">{children}</div>
     </div>
 );
 
@@ -115,7 +111,7 @@ const ManagementDashboard = () => {
                 const res = await managementAPI.getDashboardStats();
                 setData(res.data);
             } catch (error) {
-                console.error("Failed to fetch dashboard stats", error);
+                console.error("Failed to fetch overview stats", error);
             } finally {
                 setLoading(false);
             }
@@ -128,72 +124,72 @@ const ManagementDashboard = () => {
     // Every tile is defined exactly once and the role arrays below only choose which
     // of them to show. A role sees fewer tiles, never different numbers or wording.
     //
-    // For the placement-backed tiles the headline number counts Active placements only
-    // (matching the default view of the page each tile links to), and the sub-label
-    // reports the same metric across every placement.
-    const allPlacementsLabel = (total) => `${total} across all placements`;
+    // For the engagement-backed tiles the headline number counts running engagements
+    // only (matching the default view of the page each tile links to), and the
+    // sub-label reports the same metric across every engagement.
+    const allEngagementsLabel = (total) => `${total} across all engagements`;
 
     const activeEmployeesCard = {
-        label: 'Active Employees',
+        label: 'Active consultants',
         value: data.stats.employees,
         icon: Users,
         colorClass: 'text-(--brand-primary)',
-        subLabel: `${data.stats.employeesTotal} all employees`,
-        onClick: () => navigate('/management/workforce?status=ACTIVE'),
+        subLabel: `${data.stats.employeesTotal} in the talent roster`,
+        onClick: () => navigate(`${PATHS.talent}?status=ACTIVE`),
     };
 
     const activePlacementsCard = {
-        label: 'Active Placements',
+        label: 'Running engagements',
         value: data.stats.placements,
-        icon: Briefcase,
+        icon: Rocket,
         colorClass: 'text-sky-500',
-        subLabel: `${data.stats.placementsTotal} all placements`,
-        onClick: () => navigate('/management/placements?status=ACTIVE'),
+        subLabel: `${data.stats.placementsTotal} engagements overall`,
+        onClick: () => navigate(`${PATHS.engagements}?status=ACTIVE`),
     };
 
     const pendingTimesheetsCard = {
-        label: 'Pending Approval Timesheets',
+        label: 'Time logs needing review',
         value: data.stats.pendingTimesheets,
-        icon: Clock,
+        icon: ClipboardCheck,
         colorClass: data.stats.pendingTimesheets > 0 ? 'text-orange-500' : 'text-emerald-500',
-        subLabel: allPlacementsLabel(data.stats.pendingTimesheetsTotal),
-        onClick: () => navigate('/management/timesheets?tab=PENDING_APPROVAL'),
+        subLabel: allEngagementsLabel(data.stats.pendingTimesheetsTotal),
+        onClick: () => navigate(`${PATHS.timeLogs}?tab=PENDING_APPROVAL`),
     };
 
     const pastDueTimesheetsCard = {
-        label: 'Past Due Timesheets',
+        label: 'Overdue time logs',
         value: data.stats.pastDueTimesheets,
         icon: CalendarX,
         colorClass: data.stats.pastDueTimesheets > 0 ? 'text-rose-500' : 'text-emerald-500',
-        subLabel: allPlacementsLabel(data.stats.pastDueTimesheetsTotal),
-        onClick: () => navigate('/management/timesheets?tab=PAST_DUE'),
+        subLabel: allEngagementsLabel(data.stats.pastDueTimesheetsTotal),
+        onClick: () => navigate(`${PATHS.timeLogs}?tab=PAST_DUE`),
     };
 
     const readyToSendInvoicesCard = {
-        label: 'Invoices Ready to Send',
+        label: 'Invoices ready to send',
         value: data.stats.readyToSendInvoices,
-        icon: FileText,
+        icon: Send,
         colorClass: 'text-fuchsia-500',
-        subLabel: allPlacementsLabel(data.stats.readyToSendInvoicesTotal),
-        onClick: () => navigate('/management/invoices?tab=READY'),
+        subLabel: allEngagementsLabel(data.stats.readyToSendInvoicesTotal),
+        onClick: () => navigate(`${PATHS.billing}?tab=READY`),
     };
 
     const pastDueInvoicesCard = {
-        label: 'Past Due Invoices',
+        label: 'Overdue invoices',
         value: data.stats.pastDueInvoices,
         icon: FileWarning,
         colorClass: data.stats.pastDueInvoices > 0 ? 'text-rose-500' : 'text-emerald-500',
-        subLabel: allPlacementsLabel(data.stats.pastDueInvoicesTotal),
-        onClick: () => navigate('/management/invoices?tab=PAST_DUE'),
+        subLabel: allEngagementsLabel(data.stats.pastDueInvoicesTotal),
+        onClick: () => navigate(`${PATHS.billing}?tab=PAST_DUE`),
     };
 
     const netBalanceCard = {
-        label: 'Total Net Balance',
+        label: 'Ledger net balance',
         value: fmt$(data.stats.totalNetBalance),
         icon: TrendingUp,
         colorClass: (data.stats.totalNetBalance ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500',
-        subLabel: 'all employees',
-        onClick: () => navigate('/management/balance-sheet'),
+        subLabel: 'across every consultant',
+        onClick: () => navigate(PATHS.ledger),
         wide: true,
     };
 
@@ -252,13 +248,12 @@ const ManagementDashboard = () => {
                 />
                 <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-(--brand-primary)">Command center</p>
+                        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-(--brand-primary)">Overview</p>
                         <h1 className="mt-2 text-3xl font-semibold text-(--text-main) sm:text-4xl">
                             {greeting()}<span className="nx-gradient-text">.</span>
                         </h1>
                         <p className="mt-2 max-w-xl text-sm text-(--text-muted)">
-                            Overview of your{' '}
-                            {userRole === 'ORG_ADMIN' ? 'administration' : userRole === 'ACCOUNTANT' ? 'accounting' : 'HR management'} system
+                            Signed in as {roleLabel(userRole)} — here's what needs you today.
                         </p>
                     </div>
 
@@ -284,13 +279,7 @@ const ManagementDashboard = () => {
             {/* People signals */}
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
-                {/* Today's Birthdays */}
-                <InfoSection
-                    icon={Cake}
-                    title="Today's Birthdays"
-                    colorClass="text-pink-500"
-                    emptyText={todayBirthdays.length === 0 ? "No birthdays today." : null}
-                >
+                <InfoSection icon={Cake} title="Birthdays today" colorClass="text-pink-500">
                     {todayBirthdays.length > 0 ? (
                         <div className="max-h-64 overflow-y-auto custom-scrollbar">
                             {todayBirthdays.map((emp, i) => (
@@ -308,13 +297,7 @@ const ManagementDashboard = () => {
                     )}
                 </InfoSection>
 
-                {/* Work Anniversaries */}
-                <InfoSection
-                    icon={Trophy}
-                    title="Work Anniversaries"
-                    colorClass="text-amber-500"
-                    emptyText={null}
-                >
+                <InfoSection icon={Trophy} title="Milestones today" colorClass="text-amber-500">
                     {todayAnniversaries.length > 0 ? (
                         <div className="max-h-64 overflow-y-auto custom-scrollbar">
                             {todayAnniversaries.map((emp, i) => (
@@ -329,17 +312,11 @@ const ManagementDashboard = () => {
                             ))}
                         </div>
                     ) : (
-                        <EmptyState text="No anniversaries today." />
+                        <EmptyState text="No work anniversaries today." />
                     )}
                 </InfoSection>
 
-                {/* Immigration Expiring */}
-                <InfoSection
-                    icon={Plane}
-                    title="Immigration Expiring (180 days)"
-                    colorClass="text-rose-500"
-                    emptyText={null}
-                >
+                <InfoSection icon={Plane} title="Work authorization expiring · 180 days" colorClass="text-rose-500">
                     {immigrationExpiring.length > 0 ? (
                         <div className="max-h-64 overflow-y-auto custom-scrollbar">
                             {immigrationExpiring.map((emp, i) => {
@@ -353,14 +330,14 @@ const ManagementDashboard = () => {
                                         code={emp.employee_code || '—'}
                                         badge={emp.status_name}
                                         badgeColor={badgeColor}
-                                        detail={`Expires ${emp.days_remaining}d left`}
+                                        detail={`${emp.days_remaining} days left`}
                                         detailColor={urgent ? 'text-rose-500' : warn ? 'text-orange-500' : 'text-(--text-muted)'}
                                     />
                                 );
                             })}
                         </div>
                     ) : (
-                        <EmptyState text="No immigration records expiring within 180 days." />
+                        <EmptyState text="No work authorizations expiring within 180 days." />
                     )}
                 </InfoSection>
 

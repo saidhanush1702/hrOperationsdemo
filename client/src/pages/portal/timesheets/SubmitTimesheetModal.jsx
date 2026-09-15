@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Send, UploadCloud, CheckCircle, AlertTriangle, ExternalLink, Clock, Info, FileText } from 'lucide-react';
+import { Send, UploadCloud, CheckCircle, AlertTriangle, ExternalLink, Timer, Info, FileText, User, Handshake, Rocket, CalendarRange, ShieldCheck } from 'lucide-react';
 import { timesheetAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
 import { fmtDateGB, getEasternDayOfWeek, getEasternDate, buildDailyLogSlots } from '../../../utils/dateUtils';
+import { Btn, Chip, Fact, Notice, cx } from '../../../components/ui/kit';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
+const STATUS_TONE = { 2: 'amber', 3: 'green', 4: 'rose' };
 
 const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
     const [details, setDetails] = useState(null);
@@ -20,7 +23,7 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
     const [isImage, setIsImage] = useState(false);
 
     const user = JSON.parse(localStorage.getItem('user')) || {};
-    const employeeName = timesheet.first_name ? `${timesheet.first_name} ${timesheet.last_name}` : user.name || 'Employee';
+    const employeeName = timesheet.first_name ? `${timesheet.first_name} ${timesheet.last_name}` : user.name || 'Consultant';
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -28,8 +31,8 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
                 const res = await timesheetAPI.getTimesheetDetails(timesheet.id);
                 setDetails(res.data);
                 setEntries(res.data.entries || []);
-            } catch (err) {
-                setError("Failed to load timesheet entries.");
+            } catch {
+                setError("Failed to load time log entries.");
             } finally {
                 setLoading(false);
             }
@@ -62,7 +65,7 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
 
     const handleEntryChange = (index, field, value) => {
         const newEntries = [...entries];
-        
+
         if (field === 'hours' && value !== '') {
             let intVal = parseInt(value, 10);
             if (isNaN(intVal)) intVal = 0;
@@ -70,7 +73,7 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
             if (intVal < 0) intVal = 0;
             value = String(intVal);
         }
-        
+
         newEntries[index][field] = value;
         setEntries(newEntries);
     };
@@ -96,7 +99,7 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
 
         const hasWeekdays = entries.some(e => { const d = getEasternDayOfWeek(e.work_date); return d !== 0 && d !== 6; });
         if (hasWeekdays && calculateTotalHours() === 0) return setError("You must log at least some hours before submitting.");
-        if (!attachment && !details.attachment_url) return setError("You MUST upload the mandatory client approval document.");
+        if (!attachment && !details.attachment_url) return setError("You MUST upload the mandatory partner approval document.");
 
         const missingNotes = entries.some(e => {
             const hrsStr = e.hours;
@@ -123,16 +126,16 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
             onRefresh();
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || "Failed to submit timesheet.");
+            setError(err.response?.data?.error || "Failed to submit time log.");
             setSubmitting(false);
         }
     };
 
     if (loading) return null;
 
-    const isEditable = details?.status_id === 1 || details?.status_id === 4; 
+    const isEditable = details?.status_id === 1 || details?.status_id === 4;
 
-    const DAY_ABBR = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const cycleName = details?.cycle_name || '';
     const isWeeklyCycle = /^(weekly|semi-weekly)$/i.test(cycleName.trim());
@@ -141,223 +144,216 @@ const SubmitTimesheetModal = ({ timesheet, onClose, onRefresh }) => {
     const weekDays = Array.from({ length: 7 }, (_, i) => DAY_ABBR[(weekStartIdx + i) % 7]);
     const dailyLogSlots = buildDailyLogSlots(entries, weekStartIdx);
 
+    const uploadInput = (
+        <input type="file" id="clientUpload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" onChange={(e) => setAttachment(e.target.files[0])} />
+    );
+
     const modalFooter = isEditable ? (
-        <div className="flex flex-col w-full gap-3">
-            {error && (
-                <div className="w-full bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2">
-                    <AlertTriangle size={14} className="shrink-0" /><span>{error}</span>
-                </div>
-            )}
-            <div className="flex justify-end w-full">
-                <button onClick={handleSubmit} disabled={submitting || (!attachment && !details?.attachment_url)} className="bg-(--brand-primary) text-(--brand-primary-text) w-full sm:w-auto px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 outline-none">
-                    {submitting ? 'Submitting...' : <><Send size={14} /> Submit Timesheet</>}
-                </button>
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
+                {error ? (
+                    <Notice tone="rose" icon={AlertTriangle}>{error}</Notice>
+                ) : (
+                    <span className="text-sm text-(--text-muted)"><b className="text-(--text-main)">{calculateTotalHours()} hrs</b> logged</span>
+                )}
             </div>
+            <Btn variant="primary" icon={Send} onClick={handleSubmit} disabled={submitting || (!attachment && !details?.attachment_url)}>
+                {submitting ? 'Submitting…' : 'Submit time log'}
+            </Btn>
         </div>
     ) : null;
 
     return (
-        <BaseModal isOpen={true} onClose={onClose} icon={<Clock size={16} />} title="Timesheet Details" footer={modalFooter}>
-            <div className="space-y-4 sm:space-y-6">
-                
-                {/* ROW 1: META INFO GRID */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-(--bg-surface) rounded-xl border border-(--border-subtle) shadow-sm">
-                    <div className="flex flex-col">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Status</p>
-                        <span className={`inline-block w-max px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            details?.status_id === 2 ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20' : 
-                            details?.status_id === 3 ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 
-                            details?.status_id === 4 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 
-                            'bg-(--bg-app) text-(--text-muted) border border-(--border-subtle)'
-                        }`}>
-                            {details?.status_name || 'Loading'}
-                        </span>
+        <BaseModal
+            isOpen={true}
+            onClose={onClose}
+            icon={<Timer size={18} />}
+            title="Time log"
+            subtitle={`${fmtDateGB(timesheet.start_date)} → ${fmtDateGB(timesheet.end_date)} · ${timesheet.client_name || ''}`}
+            footer={modalFooter}
+            noPadding
+        >
+            <div className="grid min-h-full xl:grid-cols-[minmax(0,1fr)_400px]">
+                {/* Daily log */}
+                <div className="min-w-0 space-y-5 p-4 sm:p-6 lg:p-8">
+                    {details?.status_id === 4 && details?.rejection_reason && (
+                        <Notice tone="rose" icon={AlertTriangle}>
+                            <b>Sent back:</b> {details.rejection_reason}
+                            <span className="mt-1 block">Please correct the entries below and re-submit.</span>
+                        </Notice>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-(--brand-primary)">Daily log</p>
+                            <p className="text-sm text-(--text-muted)">{fmtDateGB(timesheet.start_date)} – {fmtDateGB(timesheet.end_date)}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {isEditable && (
+                                <label className="flex cursor-pointer select-none items-center gap-2 rounded-full border border-(--border-subtle) px-3 py-1.5 text-xs text-(--text-main)">
+                                    <input type="checkbox" checked={regularHours} onChange={(e) => handleRegularHours(e.target.checked)} className="h-3.5 w-3.5 cursor-pointer" />
+                                    Regular hours
+                                </label>
+                            )}
+                            <span className="rounded-full px-3 py-1.5 text-sm font-semibold text-white" style={{ background: 'var(--brand-gradient)' }}>
+                                {calculateTotalHours()} hrs
+                            </span>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Employee</p>
-                        <p className="text-[11px] font-bold text-(--text-main) truncate">{employeeName}</p>
-                    </div>
-                    <div className="flex flex-col">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Client</p>
-                        <p className="text-[11px] font-bold text-(--text-main) truncate">{timesheet.client_name}</p>
-                    </div>
-                    <div className="flex flex-col">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider mb-0.5">Placement ID</p>
-                        <p className="text-[11px] font-bold text-(--text-main) font-mono truncate">{timesheet.placement_code || '—'}</p>
+
+                    <div className="overflow-x-auto pb-2">
+                        <div className="grid min-w-[560px] grid-cols-7 gap-2">
+                            {weekDays.map(day => (
+                                <div key={day} className="py-1 text-center text-xs font-semibold text-(--text-muted)">{day}</div>
+                            ))}
+
+                            {dailyLogSlots.map((slot, slotIdx) => {
+                                if (!slot) return <div key={`blank-${slotIdx}`} className="h-[104px] rounded-[16px] bg-(--bg-app)/40" />;
+                                const { entry, index: idx } = slot;
+                                const d = getEasternDate(entry.work_date);
+                                const dayOfWeek = getEasternDayOfWeek(entry.work_date);
+
+                                const hrsStr = entry.hours;
+                                const actualHrs = (hrsStr === '' || hrsStr === null || isNaN(parseInt(hrsStr, 10))) ? 0 : parseInt(hrsStr, 10);
+
+                                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+                                const needsNote = isWeekend ? actualHrs !== 0 : actualHrs !== 8;
+                                const noteMissing = needsNote && (!entry.notes || entry.notes.trim() === '');
+                                const tooltipText = isWeekend ? "Weekends expect 0 hours. Please add a note." : "Weekdays expect exactly 8 hours. Please add a note.";
+
+                                return (
+                                    <div
+                                        key={entry.id}
+                                        className={cx(
+                                            'relative flex h-[104px] flex-col rounded-[16px] border p-2 transition-colors',
+                                            isEditable && noteMissing ? 'border-amber-500/50 bg-amber-500/5'
+                                                : actualHrs > 0 ? 'border-(--brand-primary)/30 bg-(--brand-primary)/5'
+                                                : 'border-(--border-subtle) bg-(--bg-surface)',
+                                            isWeekend && actualHrs === 0 && 'opacity-80',
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className={cx('text-xs font-semibold', actualHrs > 0 ? 'text-(--brand-primary)' : 'text-(--text-muted)')}>{d}</span>
+                                            {isEditable && needsNote && (
+                                                <span className="cursor-help text-amber-500" title={tooltipText}><Info size={12} /></span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-1 flex-col items-center justify-center gap-1">
+                                            {isEditable ? (
+                                                <>
+                                                    <div className="flex items-baseline justify-center gap-0.5">
+                                                        <input
+                                                            type="number" step="1" min="0" max="24" placeholder="0"
+                                                            value={entry.hours !== '' && entry.hours !== null ? Number(entry.hours) : ''}
+                                                            onChange={(e) => handleEntryChange(idx, 'hours', e.target.value)}
+                                                            className="w-10 border-b border-transparent bg-transparent text-center text-lg font-semibold text-(--text-main) outline-none transition-colors focus:border-(--brand-primary)"
+                                                        />
+                                                        <span className="text-[10px] text-(--text-muted)">h</span>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder={needsNote ? "Note needed" : "Note"}
+                                                        value={entry.notes || ''}
+                                                        onChange={(e) => handleEntryChange(idx, 'notes', e.target.value)}
+                                                        className={cx(
+                                                            'w-full rounded-md bg-transparent px-1 text-center text-[11px] outline-none transition-colors',
+                                                            noteMissing ? 'text-amber-600 placeholder:text-amber-500' : 'text-(--text-muted) focus:bg-(--bg-app)',
+                                                        )}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className={cx('text-lg font-semibold', actualHrs > 0 ? 'text-(--brand-primary)' : 'text-(--text-muted) opacity-40')}>{actualHrs}h</span>
+                                                    {entry.notes && (
+                                                        <span className="line-clamp-2 w-full text-center text-[11px] text-(--text-muted)" title={entry.notes}>{entry.notes}</span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                {details?.status_id === 4 && details?.rejection_reason && (
-                    <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest flex items-center gap-1.5"><AlertTriangle size={12}/> Rejection Reason</span>
-                        <span className="text-xs font-bold text-(--text-main) leading-relaxed">{details.rejection_reason}</span>
-                        <span className="text-[10px] text-red-600 mt-1">Please correct the entries below and re-submit.</span>
-                    </div>
-                )}
-
-                {/* ROW 2: SIDE-BY-SIDE LAYOUT (Becomes stacked on mobile) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    
-                    {/* LEFT COLUMN: CALENDAR LOG */}
-                    <div className="bg-(--bg-app)/50 p-4 rounded-xl border border-(--border-subtle) flex flex-col w-full overflow-hidden">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-(--border-subtle) pb-2 mb-3 gap-2">
-                            <div>
-                                <h3 className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">Daily Log</h3>
-                                <p className="text-[10px] font-bold text-(--brand-primary) mt-1">
-                                    {fmtDateGB(timesheet.start_date)} - {fmtDateGB(timesheet.end_date)}
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-3 mt-1 sm:mt-0">
-                                {isEditable && (
-                                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={regularHours}
-                                            onChange={(e) => handleRegularHours(e.target.checked)}
-                                            className="w-3 h-3 cursor-pointer accent-(--brand-primary)"
-                                        />
-                                        <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">Regular Hours</span>
-                                    </label>
-                                )}
-                                <span className="text-xs font-bold text-(--text-main) bg-(--bg-surface) px-2 py-0.5 rounded border border-(--border-subtle) shadow-sm">
-                                    {calculateTotalHours()} hrs
-                                </span>
-                            </div>
+                {/* Summary + approval document */}
+                <aside className="space-y-5 border-t border-(--border-subtle) bg-(--bg-app)/40 p-5 xl:border-l xl:border-t-0 xl:p-6">
+                    <div className="space-y-3 rounded-[20px] border border-(--border-subtle) bg-(--bg-surface) p-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-(--text-muted)">Status</span>
+                            <Chip tone={STATUS_TONE[details?.status_id] || 'slate'}>{details?.status_name || 'Loading'}</Chip>
                         </div>
-                        
-                        {/* Horizontal scrolling wrapper to protect calendar on tiny screens */}
-                        <div className="w-full overflow-x-auto custom-scrollbar pb-2">
-                            <div className="min-w-[320px] bg-(--border-subtle) grid grid-cols-7 gap-[1px] border border-(--border-subtle) rounded-lg overflow-hidden flex-none">
-                                {weekDays.map(day => <div key={day} className="bg-(--bg-app) py-1.5 text-center text-[10px] font-bold text-(--text-muted) uppercase tracking-wider">{day}</div>)}
-                                
-                                {dailyLogSlots.map((slot, slotIdx) => {
-                                    if (!slot) return <div key={`blank-${slotIdx}`} className="bg-(--bg-app)/30 h-[60px]"></div>;
-                                    const { entry, index: idx } = slot;
-                                    const d = getEasternDate(entry.work_date);
-                                    const dayOfWeek = getEasternDayOfWeek(entry.work_date);
-
-                                    const hrsStr = entry.hours;
-                                    const actualHrs = (hrsStr === '' || hrsStr === null || isNaN(parseInt(hrsStr, 10))) ? 0 : parseInt(hrsStr, 10);
-                                    
-                                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                                    
-                                    const needsNote = isWeekend ? actualHrs !== 0 : actualHrs !== 8;
-                                    const tooltipText = isWeekend ? "Weekends expect 0 hours. Please add a note." : "Weekdays expect exactly 8 hours. Please add a note.";
-
-                                    return (
-                                        <div key={entry.id} className={`bg-(--bg-surface) h-[60px] relative p-1 flex flex-col transition-colors group ${isEditable ? 'hover:bg-(--bg-app)' : ''}`}>
-                                            
-                                            <div className="flex justify-center items-center relative mb-0.5 w-full">
-                                                <span className={`text-[10px] font-bold text-center ${actualHrs > 0 ? 'text-(--brand-primary)' : 'text-(--text-muted)'}`}>
-                                                    {d}
-                                                </span>
-                                                {isEditable && needsNote && (
-                                                    <div className="absolute right-0 top-0 text-orange-500 cursor-help" title={tooltipText}>
-                                                        <Info size={10} />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            
-                                            <div className="flex-1 flex flex-col justify-center items-center gap-0.5">
-                                                {isEditable ? (
-                                                    <>
-                                                        <div className="relative w-full px-1 flex justify-center">
-                                                            <input 
-                                                                type="number" step="1" min="0" max="24" placeholder="0" 
-                                                                value={entry.hours !== '' && entry.hours !== null ? Number(entry.hours) : ''} 
-                                                                onChange={(e) => handleEntryChange(idx, 'hours', e.target.value)} 
-                                                                className="w-full bg-transparent border-b border-transparent focus:border-(--brand-primary) text-[10px] font-bold text-center outline-none transition-colors" 
-                                                            />
-                                                        </div>
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder={needsNote ? "Note req..." : "Note"} 
-                                                            value={entry.notes || ''} 
-                                                            onChange={(e) => handleEntryChange(idx, 'notes', e.target.value)} 
-                                                            className={`w-full bg-transparent border-b text-[10px] text-center outline-none transition-colors px-0.5 ${needsNote && (!entry.notes || entry.notes.trim() === '') ? 'border-orange-500/50 text-orange-600 placeholder-orange-400 focus:border-orange-500' : 'border-transparent focus:border-(--brand-primary) text-(--text-muted)'}`}
-                                                        />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className={`text-[10px] font-bold ${actualHrs > 0 ? 'text-(--brand-primary) bg-(--brand-primary)/10 px-1.5 rounded' : 'text-(--text-muted) opacity-30'}`}>
-                                                            {actualHrs}h
-                                                        </span>
-                                                        {entry.notes && (
-                                                            <span className="text-[10px] text-(--text-muted) text-center w-full px-0.5 line-clamp-2" title={entry.notes}>
-                                                                {entry.notes}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Fact icon={User} label="Consultant" value={employeeName} />
+                            <Fact icon={Handshake} label="Partner" value={timesheet.client_name} />
+                            <Fact icon={Rocket} label="Engagement ID" value={timesheet.placement_code || '—'} mono />
+                            <Fact icon={CalendarRange} label="Cycle" value={cycleName || '—'} />
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: PREVIEW / UPLOAD */}
-                    <div className="bg-(--bg-app)/50 p-4 rounded-xl border border-(--border-subtle) flex flex-col min-h-[300px]">
-                        <h3 className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle) pb-2 mb-3 flex items-center gap-1.5">
-                            <CheckCircle size={12} className="text-green-500" /> Mandatory Client Approval
-                        </h3>
-                        
+                    <div>
+                        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-(--text-main)">
+                            <ShieldCheck size={15} className="text-emerald-500" /> Partner approval <span className="text-xs font-normal text-(--text-muted)">· required</span>
+                        </p>
+
                         {previewUrl ? (
-                            <div className="flex flex-col border border-(--border-subtle) rounded-lg bg-(--bg-surface) overflow-hidden shadow-sm flex-1">
-                                <div className="bg-(--bg-app) px-3 py-2 flex justify-between items-center border-b border-(--border-subtle)">
-                                    <span className="text-[10px] font-bold text-(--text-main) uppercase tracking-widest">
-                                        {attachment ? 'Staged Preview' : 'Document Preview'}
-                                    </span>
-                                    <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-(--brand-primary) flex items-center gap-1 hover:underline outline-none">
-                                        Fullscreen <ExternalLink size={10} />
+                            <div className="overflow-hidden rounded-[20px] border border-(--border-subtle) bg-(--bg-surface)">
+                                <div className="flex items-center justify-between border-b border-(--border-subtle) px-3 py-2">
+                                    <span className="text-xs font-semibold text-(--text-main)">{attachment ? 'Staged preview' : 'Document preview'}</span>
+                                    <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-semibold text-(--brand-primary) outline-none hover:underline">
+                                        Fullscreen <ExternalLink size={11} />
                                     </a>
                                 </div>
-                                
-                                <div className="bg-(--bg-app) flex justify-center items-center relative flex-1 min-h-[200px] overflow-hidden">
+
+                                <div className="relative flex h-[380px] items-center justify-center overflow-hidden bg-(--bg-app)">
                                     {isPdf ? (
-                                        <iframe src={previewUrl} className="w-full h-full border-0" title="Document Preview" />
+                                        <iframe src={previewUrl} className="h-full w-full border-0" title="Document preview" />
                                     ) : isImage ? (
-                                        <img src={previewUrl} alt="Approval Document" className="max-h-full max-w-full object-contain p-2" />
+                                        <img src={previewUrl} alt="Approval document" className="max-h-full max-w-full object-contain p-2" />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
                                             <FileText size={32} className="text-(--text-muted)" />
-                                            <p className="text-[10px] font-bold text-(--text-main) break-all">{attachment?.name}</p>
-                                            <p className="text-[10px] text-(--text-muted) uppercase tracking-widest">Will be converted to PDF on save</p>
+                                            <p className="break-all text-xs font-semibold text-(--text-main)">{attachment?.name}</p>
+                                            <p className="text-[11px] text-(--text-muted)">Will be converted to PDF on save</p>
                                         </div>
                                     )}
                                 </div>
 
                                 {isEditable && (
-                                    <div className="p-3 border-t border-(--border-subtle) flex flex-col items-center bg-(--bg-surface)">
-                                        <input type="file" id="clientUpload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" onChange={(e) => setAttachment(e.target.files[0])} />
-                                        <label htmlFor="clientUpload" className="cursor-pointer bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) w-full sm:w-auto px-6 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-(--brand-primary) hover:text-white hover:border-(--brand-primary) transition-all outline-none shadow-sm">
-                                            <UploadCloud size={14} /> Replace File
+                                    <div className="flex justify-center border-t border-(--border-subtle) p-3">
+                                        {uploadInput}
+                                        <label htmlFor="clientUpload" className="flex cursor-pointer items-center gap-2 rounded-full border border-(--border-subtle) px-4 py-1.5 text-xs font-semibold text-(--text-main) outline-none transition-colors hover:border-(--brand-primary)/50">
+                                            <UploadCloud size={14} /> Replace file
                                         </label>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-(--bg-surface) p-6 text-center transition-colors ${isEditable ? 'border-(--border-subtle) hover:bg-(--bg-app)' : 'border-(--border-subtle)'}`}>
-                                <div className="h-10 w-10 bg-(--bg-app) text-(--text-muted) rounded-full flex items-center justify-center mb-3">
-                                    <UploadCloud size={20} />
-                                </div>
-                                <p className="text-[11px] font-bold text-(--text-main) mb-1">Upload Proof of Approval</p>
-                                <p className="text-[10px] text-(--text-muted) max-w-[200px] leading-relaxed mb-4">Please upload an email screenshot or signed PDF from your client verifying these hours.</p>
-                                
+                            <div className="flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-(--border-subtle) bg-(--bg-surface) p-8 text-center">
+                                <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-(--brand-primary)/10 text-(--brand-primary)">
+                                    <UploadCloud size={22} />
+                                </span>
+                                <p className="text-sm font-semibold text-(--text-main)">Upload proof of approval</p>
+                                <p className="mb-4 mt-1 max-w-[240px] text-xs text-(--text-muted)">An email screenshot or signed PDF from your partner verifying these hours.</p>
+
                                 {isEditable && (
-                                    <div className="w-full sm:w-auto">
-                                        <input type="file" id="clientUpload" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" onChange={(e) => setAttachment(e.target.files[0])} />
-                                        <label htmlFor="clientUpload" className="cursor-pointer bg-(--brand-primary) text-white w-full px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 transition-all outline-none shadow-sm">
-                                            <UploadCloud size={14} /> Select File
+                                    <>
+                                        {uploadInput}
+                                        <label htmlFor="clientUpload" className="flex cursor-pointer items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white outline-none" style={{ background: 'var(--brand-gradient)' }}>
+                                            <UploadCloud size={15} /> Select file
                                         </label>
-                                    </div>
+                                    </>
                                 )}
                             </div>
                         )}
+                        {!isEditable && details?.status_id === 3 && (
+                            <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-500"><CheckCircle size={13} /> Approved — no further action needed.</p>
+                        )}
                     </div>
-                </div>
-
+                </aside>
             </div>
         </BaseModal>
     );

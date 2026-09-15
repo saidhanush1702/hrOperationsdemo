@@ -1,10 +1,55 @@
 import { useState, useEffect } from 'react';
-import { Building2, Users, Shield, Calculator, Plus, Upload, Mail, Save, Loader2, Image as ImageIcon, Power, Trash2, Eye, EyeOff } from 'lucide-react';
+import {
+    Settings2, Users, Shield, Calculator, Plus, Upload, Mail, Save, Loader2, Image as ImageIcon, Power, Trash2, Eye, EyeOff,
+    Building2, Globe, MapPin, Palette, CheckCircle2, AlertTriangle,
+} from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import AddHRModal from './AddHRModal';
 import AuditLogPanel from '../../../components/layout/AuditLogPanel';
-
 import { resolveFileUrl } from '../../../utils/fileUrl';
+import { roleLabel } from '../../../utils/constants';
+import { PageHero, StatRail, StatTile, Panel, Fact, Btn, Chip, Avatar, Notice, EmptyState, LoadingState } from '../../../components/ui/kit';
+
+const MemberCard = ({ member, canDelete, onToggle, onDelete }) => {
+    const [showPw, setShowPw] = useState(false);
+    return (
+        <div className="rounded-[22px] border border-(--border-subtle) bg-(--bg-surface) p-5 transition-colors hover:border-(--brand-primary)/35">
+            <div className="flex items-start gap-3">
+                <Avatar name={member.name} size={44} />
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-(--text-main)">{member.name}</p>
+                    <p className="truncate text-xs text-(--text-muted)">{member.email}</p>
+                </div>
+                <Chip tone={member.is_active ? 'green' : 'rose'}>{member.is_active ? 'Active' : 'Suspended'}</Chip>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-2 rounded-[14px] bg-(--bg-app)/60 px-3 py-2">
+                <span className="text-[11px] text-(--text-muted)">Password</span>
+                <span className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs text-(--text-main)">{showPw ? (member.password || '—') : '••••••••'}</span>
+                    <button type="button" onClick={() => setShowPw(p => !p)} className="shrink-0 text-(--text-muted) outline-none hover:text-(--text-main)">
+                        {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
+                    </button>
+                </span>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+                <Btn
+                    size="sm"
+                    variant={member.is_active ? 'warn' : 'success'}
+                    icon={Power}
+                    onClick={() => onToggle(member.id, member.is_active)}
+                    title={member.is_active ? 'Suspend access' : 'Restore access'}
+                >
+                    {member.is_active ? 'Suspend' : 'Restore'}
+                </Btn>
+                {canDelete && (
+                    <Btn size="icon" variant="danger" icon={Trash2} onClick={() => onDelete(member.id)} title="Delete account" />
+                )}
+            </div>
+        </div>
+    );
+};
 
 const Organisation = () => {
     const userRole = localStorage.getItem('userRole');
@@ -40,8 +85,8 @@ const Organisation = () => {
             const teamDataRes = await managementAPI.getOrganizationTeam();
             setTeam(teamDataRes.data);
         } catch (err) {
-            console.error("Failed to load organization data", err);
-            setError("Failed to load organization data.");
+            console.error("Failed to load workspace data", err);
+            setError("Failed to load workspace data.");
         } finally {
             setLoading(false);
         }
@@ -60,7 +105,7 @@ const Organisation = () => {
             formData.append('accounts_email', orgDetails.accounts_email);
             if (logoFile) formData.append('logo', logoFile);
             await managementAPI.updateOrganizationDetails(formData);
-            setSuccessMsg("Organization details updated successfully.");
+            setSuccessMsg("Workspace details updated.");
             fetchData();
         } catch (err) {
             setError(err.response?.data?.error || "Failed to update details.");
@@ -100,263 +145,108 @@ const Organisation = () => {
     const adminUsers       = team.filter(u => u.role === 'ORG_ADMIN');
     const accountantUsers  = team.filter(u => u.role === 'ACCOUNTANT');
 
-    const TABS = [
-        { key: 'DETAILS',     label: 'Company Details' },
-        { key: 'ADMINS',      label: `Administrators (${adminUsers.length})` },
-        { key: 'ACCOUNTANTS', label: `Accountants (${accountantUsers.length})` },
-        { key: 'HR',          label: `HR Representatives (${hrUsers.length})` },
-    ];
-
-    const TeamRow = ({ member }) => {
-        const [showPw, setShowPw] = useState(false);
-        return (
-            <tr className="hover:bg-(--bg-app) transition-colors border-b border-(--border-subtle)">
-                <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="font-bold text-xs sm:text-sm text-(--text-main) truncate max-w-[120px] sm:max-w-none">{member.name}</div>
-                    <div className="sm:hidden text-[10px] text-(--text-muted) mt-0.5 truncate">{member.email}</div>
-                </td>
-                <td className="hidden sm:table-cell px-6 py-4 text-(--text-muted) text-sm">{member.email}</td>
-                <td className="hidden sm:table-cell px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs text-(--text-main) tracking-wide">
-                            {showPw ? (member.password || '—') : '••••••••'}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => setShowPw(p => !p)}
-                            className="text-(--text-muted) hover:text-(--text-main) transition-colors outline-none shrink-0"
-                        >
-                            {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
-                        </button>
-                    </div>
-                </td>
-                <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
-                    <span className={`px-2 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${member.is_active ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-500'}`}>
-                        {member.is_active ? 'Active' : 'Suspended'}
-                    </span>
-                </td>
-                <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
-                    <div className="flex justify-end gap-1.5 sm:gap-2">
-                        <button
-                            onClick={() => handleToggleAccess(member.id, member.is_active)}
-                            className={`p-1.5 rounded-lg border transition-colors outline-none ${member.is_active ? 'text-yellow-600 bg-yellow-500/10 hover:bg-yellow-500/20 border-yellow-500/20' : 'text-green-600 bg-green-500/10 hover:bg-green-500/20 border-green-500/20'}`}
-                            title={member.is_active ? "Suspend Access" : "Restore Access"}
-                        >
-                            <Power size={13} />
-                        </button>
-                        {canDelete && (
-                            <button
-                                onClick={() => handleDeleteMember(member.id)}
-                                className="p-1.5 rounded-lg border text-red-600 bg-red-500/10 hover:bg-red-500/20 border-red-500/20 transition-colors outline-none"
-                                title="Delete Account"
-                            >
-                                <Trash2 size={13} />
-                            </button>
-                        )}
-                    </div>
-                </td>
-            </tr>
-        );
+    const TEAM = {
+        ADMINS:      { role: 'ORG_ADMIN',  users: adminUsers,      icon: Shield,     title: 'Workspace admins', desc: 'Full access to settings, talent and financial data.', empty: 'No additional admins found.' },
+        ACCOUNTANTS: { role: 'ACCOUNTANT', users: accountantUsers, icon: Calculator, title: 'Finance leads',    desc: 'Full access to every module except delete operations.', empty: 'No finance leads found.' },
+        HR:          { role: 'HR',         users: hrUsers,         icon: Users,      title: 'Talent ops',       desc: 'Handles time logs, talent and engagements, but cannot alter core settings.', empty: 'No talent ops members found.' },
     };
 
-    const TeamTable = ({ users, emptyMsg }) => (
-        <div className="overflow-x-auto">
-            {loading ? (
-                <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-(--brand-primary)" /></div>
-            ) : (
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-(--bg-app) border-b border-(--border-subtle)">
-                        <tr>
-                            <th className="px-3 sm:px-6 py-3 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">Name</th>
-                            <th className="hidden sm:table-cell px-6 py-3 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">Email</th>
-                            <th className="hidden sm:table-cell px-6 py-3 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">Password</th>
-                            <th className="px-3 sm:px-6 py-3 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest text-center">Status</th>
-                            <th className="px-3 sm:px-6 py-3 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.length === 0 ? (
-                            <tr><td colSpan="5" className="p-8 text-center text-(--text-muted) text-xs uppercase tracking-widest font-bold">{emptyMsg}</td></tr>
-                        ) : (
-                            users.map(u => <TeamRow key={u.id} member={u} />)
-                        )}
-                    </tbody>
-                </table>
-            )}
-        </div>
-    );
+    const team_ = TEAM[activeTab];
 
     return (
-        <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-500 pb-10 px-0">
+        <div className="mx-auto max-w-[1400px] space-y-6">
+            <PageHero
+                icon={Settings2}
+                eyebrow="Workspace"
+                title="Workspace"
+                description="Your company profile, billing mailbox, brand mark and the people who run the console."
+            >
+                <StatRail>
+                    <StatTile label="Profile" icon={Building2} value={orgDetails.name ? '1' : '—'} hint="Company & brand" active={activeTab === 'DETAILS'} onClick={() => setActiveTab('DETAILS')} />
+                    <StatTile label="Workspace admins" icon={Shield} value={adminUsers.length} active={activeTab === 'ADMINS'} onClick={() => setActiveTab('ADMINS')} />
+                    <StatTile label="Finance leads" icon={Calculator} value={accountantUsers.length} active={activeTab === 'ACCOUNTANTS'} onClick={() => setActiveTab('ACCOUNTANTS')} />
+                    <StatTile label="Talent ops" icon={Users} value={hrUsers.length} active={activeTab === 'HR'} onClick={() => setActiveTab('HR')} />
+                </StatRail>
+            </PageHero>
 
-            {/* Header */}
-            <div className="px-1">
-                <h1 className="text-xl sm:text-3xl font-semibold text-(--text-main) tracking-tight flex items-center gap-2 sm:gap-3">
-                    <Building2 className="text-(--brand-primary) shrink-0" size={22} />
-                    Organization Settings
-                </h1>
-                <p className="text-xs sm:text-sm text-(--text-muted) mt-1">Manage your company profile, billing email, and administrative team.</p>
-            </div>
-
-            {/* Scrollable Tabs */}
-            <div className="flex overflow-x-auto hide-scrollbar border-b border-(--border-subtle) gap-0">
-                {TABS.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`shrink-0 px-3 sm:px-4 py-2.5 text-[10px] sm:text-sm font-bold uppercase tracking-widest whitespace-nowrap transition-colors outline-none ${
-                            activeTab === tab.key
-                                ? 'border-b-2 border-(--brand-primary) text-(--brand-primary)'
-                                : 'text-(--text-muted) hover:text-(--text-main) border-b-2 border-transparent'
-                        }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* DETAILS TAB */}
             {activeTab === 'DETAILS' && (
-                <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm p-4 sm:p-6 md:p-8">
-                    {error && <div className="mb-4 p-3 bg-red-500/10 text-red-600 border border-red-500/20 rounded-xl text-sm">{error}</div>}
-                    {successMsg && <div className="mb-4 p-3 bg-green-500/10 text-green-600 border border-green-500/20 rounded-xl text-sm">{successMsg}</div>}
+                <div className="space-y-5">
+                    {error && <Notice tone="rose" icon={AlertTriangle}>{error}</Notice>}
+                    {successMsg && <Notice tone="green" icon={CheckCircle2}>{successMsg}</Notice>}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                        <div className="space-y-5 sm:space-y-6">
-                            <div>
-                                <h3 className="text-xs sm:text-sm font-bold text-(--text-main) uppercase tracking-wider mb-3 sm:mb-4 border-b border-(--border-subtle) pb-2">General Information</h3>
-                                <div className="space-y-2.5 text-sm">
-                                    <div className="flex gap-2">
-                                        <span className="text-(--text-muted) font-medium w-20 shrink-0 text-xs sm:text-sm">Company:</span>
-                                        <span className="font-bold text-(--text-main) text-xs sm:text-sm">{orgDetails.name}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <span className="text-(--text-muted) font-medium w-20 shrink-0 text-xs sm:text-sm">Domain:</span>
-                                        <span className="text-(--text-main) text-xs sm:text-sm break-all">{orgDetails.domain}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <span className="text-(--text-muted) font-medium w-20 shrink-0 text-xs sm:text-sm">Address:</span>
-                                        <span className="text-(--text-main) text-xs sm:text-sm">{orgDetails.address}</span>
-                                    </div>
+                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                        <div className="space-y-5">
+                            <Panel icon={Building2} title="Identity" subtitle="Managed by the platform owner">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <Fact icon={Building2} label="Company" value={orgDetails.name} />
+                                    <Fact icon={Globe} label="Domain" value={orgDetails.domain} />
+                                    <Fact icon={MapPin} label="Address" value={orgDetails.address} className="sm:col-span-2" />
                                 </div>
-                                <p className="text-[10px] text-(--text-muted) mt-2 italic">To change core company details, please contact Super Admin support.</p>
-                            </div>
+                                <p className="mt-4 text-xs text-(--text-muted)">To change core company details, contact platform support.</p>
+                            </Panel>
 
-                            <div>
-                                <h3 className="text-xs sm:text-sm font-bold text-(--text-main) uppercase tracking-wider mb-3 sm:mb-4 border-b border-(--border-subtle) pb-2">Billing Settings</h3>
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5"><Mail size={13} /> Accounts BCC Email</label>
-                                    <p className="text-[10px] text-(--text-muted) leading-relaxed mb-1">This email will be BCC'd on all outbound invoice emails.</p>
-                                    <input
-                                        type="email"
-                                        value={orgDetails.accounts_email}
-                                        onChange={(e) => setOrgDetails({ ...orgDetails, accounts_email: e.target.value })}
-                                        placeholder="e.g., accounts@yourcompany.com"
-                                        className="w-full p-3 bg-(--bg-app) border border-(--border-subtle) rounded-xl text-sm outline-none focus:border-(--brand-primary)"
-                                    />
-                                </div>
-                            </div>
+                            <Panel icon={Mail} title="Billing mailbox" subtitle="BCC'd on every outbound invoice email">
+                                <input
+                                    type="email"
+                                    value={orgDetails.accounts_email}
+                                    onChange={(e) => setOrgDetails({ ...orgDetails, accounts_email: e.target.value })}
+                                    placeholder="e.g. accounts@yourcompany.com"
+                                    className="nx-input"
+                                />
+                            </Panel>
                         </div>
 
-                        <div>
-                            <h3 className="text-xs sm:text-sm font-bold text-(--text-main) uppercase tracking-wider mb-3 sm:mb-4 border-b border-(--border-subtle) pb-2">Organization Logo</h3>
-                            <p className="text-[10px] text-(--text-muted) leading-relaxed mb-4">This logo appears on your generated Invoice PDFs. Use a transparent PNG or JPG (max 2MB).</p>
-
-                            <div className="flex flex-col items-center sm:items-start gap-4">
-                                <div className="w-40 h-40 sm:w-48 sm:h-48 border-2 border-dashed border-(--border-subtle) rounded-2xl bg-(--bg-app) flex flex-col items-center justify-center overflow-hidden relative group">
-                                    {logoPreview ? (
-                                        <img src={logoPreview} alt="Org Logo" className="w-full h-full object-contain p-4" />
-                                    ) : (
-                                        <div className="flex flex-col items-center text-(--text-muted)">
-                                            <ImageIcon size={28} className="mb-2 opacity-50" />
-                                            <span className="text-xs font-medium uppercase tracking-widest">No Logo</span>
-                                        </div>
-                                    )}
-                                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-200">
-                                        <Upload size={22} className="text-white mb-2" />
-                                        <span className="text-white text-xs font-bold uppercase tracking-widest">Change Logo</span>
-                                        <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleLogoChange} />
-                                    </label>
-                                </div>
-                                {logoFile && <span className="text-xs font-medium text-(--brand-primary)">New file selected: {logoFile.name}</span>}
-                            </div>
-                        </div>
+                        <Panel icon={Palette} title="Brand mark" subtitle="Printed on generated invoice PDFs · PNG or JPG, max 2MB">
+                            <label className="group relative flex aspect-[4/3] max-w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[22px] border-2 border-dashed border-(--border-subtle) bg-(--bg-app)/60 transition-colors hover:border-(--brand-primary)/50">
+                                {logoPreview ? (
+                                    <img src={logoPreview} alt="Workspace logo" className="h-full w-full object-contain p-6" />
+                                ) : (
+                                    <span className="flex flex-col items-center text-(--text-muted)">
+                                        <ImageIcon size={30} className="mb-2 opacity-50" />
+                                        <span className="text-sm">No logo yet</span>
+                                    </span>
+                                )}
+                                <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                    <Upload size={22} className="mb-2 text-white" />
+                                    <span className="text-sm font-semibold text-white">Change logo</span>
+                                </span>
+                                <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={handleLogoChange} />
+                            </label>
+                            {logoFile && <p className="mt-3 text-xs font-medium text-(--brand-primary)">New file selected: {logoFile.name}</p>}
+                        </Panel>
                     </div>
 
-                    <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-(--border-subtle) flex justify-end">
-                        <button
-                            onClick={handleSaveDetails}
-                            disabled={savingDetails}
-                            className="bg-(--brand-primary) text-white px-6 sm:px-8 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm hover:shadow-md hover:opacity-90 disabled:opacity-50 transition-all"
-                        >
-                            {savingDetails ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                            Save Changes
-                        </button>
+                    <div className="flex justify-end">
+                        <Btn variant="primary" icon={savingDetails ? Loader2 : Save} onClick={handleSaveDetails} disabled={savingDetails}>
+                            Save changes
+                        </Btn>
                     </div>
                 </div>
             )}
 
-            {/* ADMINS TAB */}
-            {activeTab === 'ADMINS' && (
-                <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm overflow-hidden">
-                    <div className="p-4 sm:p-6 border-b border-(--border-subtle) flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-(--bg-app)/30">
-                        <div>
-                            <h2 className="text-xs sm:text-sm font-bold text-(--text-main) uppercase tracking-wider flex items-center gap-2">
-                                <Shield size={15} className="text-blue-500" /> Organization Admins
-                            </h2>
-                            <p className="text-[10px] text-(--text-muted) mt-1">Admins have full access to settings, workforce, and financial data.</p>
+            {team_ && (
+                <Panel
+                    icon={team_.icon}
+                    title={team_.title}
+                    subtitle={team_.desc}
+                    actions={
+                        <Btn size="sm" variant="primary" icon={Plus} onClick={() => { setModalRole(team_.role); setIsAddModalOpen(true); }}>
+                            Add {roleLabel(team_.role).toLowerCase()}
+                        </Btn>
+                    }
+                >
+                    {loading ? (
+                        <LoadingState />
+                    ) : team_.users.length === 0 ? (
+                        <EmptyState icon={team_.icon} title={team_.empty} />
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {team_.users.map(u => (
+                                <MemberCard key={u.id} member={u} canDelete={canDelete} onToggle={handleToggleAccess} onDelete={handleDeleteMember} />
+                            ))}
                         </div>
-                        <button
-                            onClick={() => { setModalRole('ORG_ADMIN'); setIsAddModalOpen(true); }}
-                            className="shrink-0 bg-(--bg-surface) border border-(--border-subtle) text-(--text-main) hover:text-(--brand-primary) hover:border-(--brand-primary) px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all"
-                        >
-                            <Plus size={13} /> Add Admin
-                        </button>
-                    </div>
-                    <TeamTable users={adminUsers} emptyMsg="No additional admins found." />
-                </div>
-            )}
-
-            {/* ACCOUNTANTS TAB */}
-            {activeTab === 'ACCOUNTANTS' && (
-                <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm overflow-hidden">
-                    <div className="p-4 sm:p-6 border-b border-(--border-subtle) flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-(--bg-app)/30">
-                        <div>
-                            <h2 className="text-xs sm:text-sm font-bold text-(--text-main) uppercase tracking-wider flex items-center gap-2">
-                                <Calculator size={15} className="text-emerald-500" /> Accountants
-                            </h2>
-                            <p className="text-[10px] text-(--text-muted) mt-1">Accountants have full access to all modules except delete operations.</p>
-                        </div>
-                        <button
-                            onClick={() => { setModalRole('ACCOUNTANT'); setIsAddModalOpen(true); }}
-                            className="shrink-0 bg-(--bg-surface) border border-(--border-subtle) text-(--text-main) hover:text-(--brand-primary) hover:border-(--brand-primary) px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all"
-                        >
-                            <Plus size={13} /> Add Accountant
-                        </button>
-                    </div>
-                    <TeamTable users={accountantUsers} emptyMsg="No accountants found." />
-                </div>
-            )}
-
-            {/* HR TAB */}
-            {activeTab === 'HR' && (
-                <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm overflow-hidden">
-                    <div className="p-4 sm:p-6 border-b border-(--border-subtle) flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-(--bg-app)/30">
-                        <div>
-                            <h2 className="text-xs sm:text-sm font-bold text-(--text-main) uppercase tracking-wider flex items-center gap-2">
-                                <Users size={15} className="text-purple-500" /> HR Representatives
-                            </h2>
-                            <p className="text-[10px] text-(--text-muted) mt-1">HR handles timesheets, workforce, and placements, but cannot alter core settings.</p>
-                        </div>
-                        <button
-                            onClick={() => { setModalRole('HR'); setIsAddModalOpen(true); }}
-                            className="shrink-0 bg-(--bg-surface) border border-(--border-subtle) text-(--text-main) hover:text-(--brand-primary) hover:border-(--brand-primary) px-3 sm:px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all"
-                        >
-                            <Plus size={13} /> Add HR Rep
-                        </button>
-                    </div>
-                    <TeamTable users={hrUsers} emptyMsg="No HR representatives found." />
-                </div>
+                    )}
+                </Panel>
             )}
 
             <AuditLogPanel module="organisation" />

@@ -1,11 +1,15 @@
 import { useState, useMemo, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { Receipt, CheckCircle, XCircle, Loader2, Lock, AlertTriangle, Download, User, MessageSquare, RefreshCw, Plus, ArrowUpCircle, ArrowDownCircle, Trash2, X as XIcon, ShieldCheck, Users, History, Wallet } from 'lucide-react';
+import {
+    Banknote, CheckCircle, XCircle, Loader2, Lock, AlertTriangle, Download, MessageSquare, RefreshCw, Plus,
+    Trash2, X as XIcon, ShieldCheck, Users, History, Wallet, Clock, CalendarDays, Info,
+} from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
 import AmountInput from '../../../components/ui/AmountInput';
 import { fmtDate } from '../../../utils/dateUtils';
 import { exportToExcel } from '../../../utils/exportToExcel';
+import { DetailLayout, SectionTitle, Btn, Chip, Notice, EmptyState, Avatar, cx } from '../../../components/ui/kit';
 
 const fmt = (v) => '$' + parseFloat(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -214,11 +218,10 @@ const computeArrearsAdj = (arrearsItems, regularItems, adjustments = []) => {
 //
 // Adjustments belong to an EMPLOYEE, not a row, but they are entered and shown on
 // the row that carries them (the same row computeItemBuffers / computeFixedRows
-// picks to absorb the adjustment). Threading add/remove callbacks through four
-// tables and four card components would be noise, so the handlers travel by
-// context instead and the cell is a single shared component.
+// picks to absorb the adjustment). The handlers travel by context so every pay
+// line can share a single adjustment cell.
 //
-// The reason for an adjustment goes in that row's Comments box, so no separate
+// The reason for an adjustment goes in that row's comment box, so no separate
 // description is collected here; the comment is sent along as the description if
 // one has been typed.
 const AdjustCtx = createContext(null);
@@ -231,18 +234,9 @@ const InlineAdjust = ({ employeeId, itemId, show, adjNet = 0, arrears = false })
     const [err, setErr]       = useState('');
     const [busy, setBusy]     = useState(false);
 
-    // An adjustment belongs to the EMPLOYEE for the whole run, not to a row. An
-    // employee can hold several rows — one per rate segment, one per placement, or
-    // one in each section — so two things are kept deliberately separate:
-    //
-    //   ADD    from any row. The entry is per employee, so the row you happen to be
-    //          looking at is irrelevant and hunting for a particular one is friction.
-    //   SHOW   on exactly one row, the carrier. Printing the figure on every row of
-    //          the employee would read as several adjustments totalling several times
-    //          the real amount.
-    //
-    // The carrier matches submitPayrollRun's own choice, so the row highlighted here
-    // is the row the ledger will attribute it to.
+    // An adjustment belongs to the EMPLOYEE for the whole run, not to a row. It can
+    // be ADDED from any of their rows, but it is SHOWN on exactly one — the carrier,
+    // which matches submitPayrollRun's own choice — so it never reads as several.
     const carries  = arrears ? !!ctx?.arrearsCarrier?.[itemId] : show;
     const mine     = (ctx?.adjustments || []).filter(a => a.employee_id === employeeId);
     const editable = ctx && !ctx.readOnly;
@@ -259,41 +253,39 @@ const InlineAdjust = ({ employeeId, itemId, show, adjNet = 0, arrears = false })
     };
 
     const addButton = editable && !open && (
-        <button onClick={() => { setOpen(true); setErr(''); }}
-            title="Add an adjustment for this employee. It applies once for the whole run."
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border border-(--border-subtle) bg-(--bg-surface) text-(--text-muted) hover:text-(--brand-primary) hover:border-(--brand-primary)/40 transition-colors outline-none">
-            <Plus size={10} /> Adjust
+        <button
+            type="button"
+            onClick={() => { setOpen(true); setErr(''); }}
+            title="Add an adjustment for this consultant. It applies once for the whole run."
+            className="inline-flex items-center gap-1 rounded-full border border-(--border-subtle) px-2.5 py-1 text-[11px] font-semibold text-(--text-muted) outline-none transition-colors hover:border-(--brand-primary)/40 hover:text-(--brand-primary)"
+        >
+            <Plus size={11} /> Adjust
         </button>
     );
 
     const editor = editable && open && (
-        <div className="w-[150px] rounded-lg border border-(--brand-primary)/30 bg-(--bg-surface) p-1.5 shadow-sm flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex gap-1">
-                <button onClick={() => setType('addition')}
-                    className={`flex-1 px-1 py-1 rounded text-[9px] font-bold uppercase tracking-wider border transition-colors outline-none ${
-                        type === 'addition' ? 'bg-green-600 text-white border-green-600'
-                                            : 'bg-(--bg-app) text-green-700 border-(--border-subtle) hover:border-green-500/50'}`}>
-                    + Add
+        <div className="flex w-full max-w-[230px] flex-col gap-2 rounded-[14px] border border-(--brand-primary)/30 bg-(--bg-surface) p-2">
+            <div className="grid grid-cols-2 gap-1">
+                <button
+                    type="button"
+                    onClick={() => setType('addition')}
+                    className={cx('rounded-full px-2 py-1 text-[11px] font-semibold outline-none transition-colors', type === 'addition' ? 'bg-emerald-500 text-white' : 'text-emerald-500 hover:bg-emerald-500/10')}
+                >
+                    + Addition
                 </button>
-                <button onClick={() => setType('deduction')}
-                    className={`flex-1 px-1 py-1 rounded text-[9px] font-bold uppercase tracking-wider border transition-colors outline-none ${
-                        type === 'deduction' ? 'bg-red-500 text-white border-red-500'
-                                             : 'bg-(--bg-app) text-red-600 border-(--border-subtle) hover:border-red-500/50'}`}>
-                    − Ded
+                <button
+                    type="button"
+                    onClick={() => setType('deduction')}
+                    className={cx('rounded-full px-2 py-1 text-[11px] font-semibold outline-none transition-colors', type === 'deduction' ? 'bg-rose-500 text-white' : 'text-rose-500 hover:bg-rose-500/10')}
+                >
+                    − Deduction
                 </button>
             </div>
-            <AmountInput value={amount} onChange={setAmount} autoFocus
-                className="w-full px-2 py-1 text-[11px] font-bold text-right bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded focus:border-(--brand-primary) outline-none" />
-            {err && <span className="text-[9px] font-bold text-red-500">{err}</span>}
+            <AmountInput value={amount} onChange={setAmount} autoFocus className="nx-input h-8 text-right" />
+            {err && <span className="text-[11px] font-medium text-rose-500">{err}</span>}
             <div className="flex gap-1">
-                <button onClick={submit} disabled={busy}
-                    className="flex-1 flex items-center justify-center gap-1 px-1 py-1 rounded text-[9px] font-bold uppercase tracking-wider bg-(--brand-primary) text-(--brand-primary-text) disabled:opacity-50 outline-none">
-                    {busy ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />} Save
-                </button>
-                <button onClick={() => { setOpen(false); setAmount(''); setErr(''); }}
-                    className="px-1.5 py-1 rounded text-[9px] font-bold border border-(--border-subtle) text-(--text-muted) hover:text-(--text-main) outline-none">
-                    <XIcon size={10} />
-                </button>
+                <Btn size="sm" variant="primary" icon={busy ? Loader2 : CheckCircle} onClick={submit} disabled={busy} className="flex-1">Save</Btn>
+                <Btn size="sm" variant="subtle" icon={XIcon} onClick={() => { setOpen(false); setAmount(''); setErr(''); }} />
             </div>
         </div>
     );
@@ -302,14 +294,15 @@ const InlineAdjust = ({ employeeId, itemId, show, adjNet = 0, arrears = false })
     //    where it is actually applied so nothing double-reads.
     if (!carries) {
         return (
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-start gap-1.5">
                 {net !== 0 ? (
-                    <span className="text-[10px] font-bold text-(--text-muted)/80 leading-tight text-right"
-                        title={`This employee has a net ${net > 0 ? 'addition' : 'deduction'} of ${fmt(Math.abs(net))} for this run. It is applied once, on their first placement's row.`}>
-                        {fmt(net)}<br />
-                        <span className="uppercase tracking-widest">applied on another row</span>
+                    <span
+                        className="text-xs text-(--text-muted)"
+                        title={`This consultant has a net ${net > 0 ? 'addition' : 'deduction'} of ${fmt(Math.abs(net))} for this run. It is applied once, on their first engagement's line.`}
+                    >
+                        {fmt(net)} · applied on another line
                     </span>
-                ) : !open && <span className="text-(--text-muted) text-sm">—</span>}
+                ) : !open && <span className="text-sm text-(--text-muted)">—</span>}
                 {addButton}
                 {editor}
             </div>
@@ -317,38 +310,28 @@ const InlineAdjust = ({ employeeId, itemId, show, adjNet = 0, arrears = false })
     }
 
     return (
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-start gap-1.5">
             {adjNet !== 0 && (
-                <div>
-                    <span className={`font-bold text-sm ${adjNet > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                        {adjNet > 0 ? '+' : ''}{fmt(adjNet)}
-                    </span>
-                    <div className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${adjNet > 0 ? 'text-green-500' : 'text-red-400'}`}>
-                        {adjNet > 0 ? 'Addition' : 'Deduction'}
-                    </div>
-                </div>
+                <span className={cx('text-sm font-semibold', adjNet > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                    {adjNet > 0 ? '+' : ''}{fmt(adjNet)} <span className="text-[11px] font-medium">{adjNet > 0 ? 'addition' : 'deduction'}</span>
+                </span>
             )}
 
             {/* Each entry removable — the net above can be made of several. */}
             {editable && mine.length > 0 && (
-                <div className="flex flex-col items-end gap-0.5 w-full">
+                <div className="flex flex-wrap gap-1.5">
                     {mine.map(a => (
-                        <div key={a.id} className="flex items-center gap-1 text-[10px] font-bold">
-                            <span className={a.type === 'addition' ? 'text-green-600' : 'text-red-500'}>
-                                {a.type === 'addition' ? '+' : '−'}{fmt(a.amount)}
-                            </span>
-                            <button onClick={() => ctx.remove(a.id)} title="Remove this adjustment"
-                                className="text-red-400 hover:text-red-600 outline-none shrink-0">
+                        <span key={a.id} className={cx('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold', a.type === 'addition' ? 'border-emerald-500/25 text-emerald-500' : 'border-rose-500/25 text-rose-500')}>
+                            {a.type === 'addition' ? '+' : '−'}{fmt(a.amount)}
+                            <button type="button" onClick={() => ctx.remove(a.id)} title="Remove this adjustment" className="outline-none hover:opacity-70">
                                 <Trash2 size={11} />
                             </button>
-                        </div>
+                        </span>
                     ))}
                 </div>
             )}
 
-            {adjNet === 0 && mine.length === 0 && !open && (
-                <span className="text-(--text-muted) text-sm">—</span>
-            )}
+            {adjNet === 0 && mine.length === 0 && !open && <span className="text-sm text-(--text-muted)">—</span>}
 
             {addButton}
             {editor}
@@ -356,913 +339,230 @@ const InlineAdjust = ({ employeeId, itemId, show, adjNet = 0, arrears = false })
     );
 };
 
-// ─── Section header ───────────────────────────────────────────────────────────
-const SectionHeading = ({ title, subtitle, count, accent, iconBg, iconColor, icon: Icon }) => (
-    <div className={`flex items-center justify-between px-4 py-2.5 border-b border-(--border-subtle) ${accent}`}>
-        <div className="flex items-center gap-3">
-            <div className={`flex items-center justify-center w-7 h-7 rounded-xl ${iconBg} shrink-0`}>
-                <Icon size={14} className={iconColor} />
-            </div>
-            <div>
-                <span className={`text-[11px] font-bold uppercase tracking-widest ${iconColor}`}>{title}</span>
-                {subtitle && <p className="text-[10px] text-(--text-muted) font-bold uppercase tracking-wider mt-0.5 hidden sm:block">{subtitle}</p>}
-            </div>
-        </div>
-        <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${iconBg} ${iconColor} border-current/20 shrink-0`}>
-            {count} {count !== 1 ? 'items' : 'item'}
-        </span>
-    </div>
-);
-
-// ─── Mobile card — LCA item ───────────────────────────────────────────────────
-const LcaItemCard = ({ item, bufInfo, st, comments, readOnly, onApprove, onReject, onCommentChange }) => {
-    const hasLca     = item.lca_wage_per_period != null;
-    const showBuf    = !bufInfo || bufInfo.show;
-    const buffer     = bufInfo ? bufInfo.buffer : (hasLca
-        ? parseFloat(item.total_amount) - periodPayout(item)
-        : 0);
-    const isPositive = !hasLca || (buffer != null && buffer > 0);
-
-    return (
-        <div className={`rounded-xl border p-4 space-y-3 transition-colors ${
-            st === 'APPROVED' ? 'bg-emerald-500/5 border-emerald-500/20' :
-            st === 'REJECTED' ? 'bg-red-500/5 border-red-500/20' :
-            'bg-(--bg-surface) border-(--border-subtle)'
-        }`}>
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="h-8 w-8 rounded-full bg-(--brand-primary)/10 flex items-center justify-center text-(--brand-primary) text-[10px] font-bold shrink-0">
-                        <User size={14} />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-(--text-main) truncate">{item.first_name} {item.last_name}</p>
-                        <p className="text-[10px] font-mono text-(--text-muted) uppercase tracking-tight mt-0.5">{item.employee_code}</p>
-                    </div>
-                </div>
-                {readOnly && (
-                    <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                    }`}>
-                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                        {st === 'REJECTED' && <XCircle size={11} />}
-                        {st}
-                    </span>
-                )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                {item.segment_start && (
-                    <div className="col-span-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Segment Period</p>
-                        <p className="font-bold text-(--text-main) mt-0.5 font-mono text-[11px]">{fmtDate(item.segment_start)} – {fmtDate(item.segment_end)}</p>
-                    </div>
-                )}
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Approved Hrs</p>
-                    <p className="font-bold text-(--text-main) mt-0.5">{parseFloat(item.approved_hours).toFixed(2)} hrs</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Pay Rate</p>
-                    <p className="font-bold text-(--text-main) mt-0.5">{fmt(item.pay_rate)}/hr</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Total Amount</p>
-                    <p className="font-bold text-(--brand-primary) mt-0.5">{fmt(item.total_amount)}</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Adjustment</p>
-                    <div className="mt-0.5 flex justify-start">
-                        <InlineAdjust employeeId={item.employee_id} itemId={item.id}
-                            show={!!bufInfo?.showAdj} adjNet={bufInfo?.adjNet || 0} />
-                    </div>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">LCA / Period</p>
-                    {item.lca_wage_per_period != null
-                        ? <p className="font-bold text-purple-600 mt-0.5">{fmt(item.lca_wage_per_period)}</p>
-                        : <p className="text-(--text-muted) mt-0.5 text-[10px] font-bold">—</p>
-                    }
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Buffer</p>
-                    {showBuf ? (
-                        <p className={`font-bold mt-0.5 ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-                            {fmt(buffer)}
-                            <span className={`text-[10px] ml-1 ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
-                                {isPositive ? 'Surplus' : 'No Surplus'}
-                            </span>
-                        </p>
-                    ) : (
-                        <p className="text-(--text-muted) mt-0.5 text-xs font-bold">—</p>
-                    )}
-                </div>
-                <div className="col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Client</p>
-                    <p className="font-bold text-(--text-main) mt-0.5 truncate">{item.client_name}</p>
-                    <p className="text-[10px] text-(--text-muted) font-bold">{fmt(item.bill_rate)}/hr</p>
-                </div>
-            </div>
-
-            {readOnly ? (
-                comments && (
-                    <div className="flex items-start gap-2 bg-(--bg-app) border border-(--border-subtle) rounded-lg px-3 py-2">
-                        <MessageSquare size={12} className="text-(--text-muted) shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-(--text-main) font-bold leading-relaxed">{comments}</p>
-                    </div>
-                )
-            ) : (
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted) flex items-center gap-1 mb-1">
-                        <MessageSquare size={10} /> Comment
-                    </label>
-                    <textarea value={comments || ''} onChange={e => onCommentChange(e.target.value)} rows={2}
-                        placeholder="Optional comment…"
-                        className="w-full px-2.5 py-2 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none" />
-                </div>
-            )}
-            {!readOnly && (
-                <div className="flex gap-2 pt-1">
-                    <button onClick={onApprove} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                        <CheckCircle size={13} /> Approve
-                    </button>
-                    <button onClick={onReject} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                        <XCircle size={13} /> Reject
-                    </button>
-                </div>
-            )}
-        </div>
-    );
+// ─── Pay line (one card per run item, every section and every width) ─────────
+const DECISION = {
+    APPROVED: { tone: 'green', label: 'Approved', icon: CheckCircle },
+    REJECTED: { tone: 'rose',  label: 'Rejected', icon: XCircle },
+    PENDING:  { tone: 'amber', label: 'Pending',  icon: Clock },
 };
 
-// ─── Mobile card — C2C fixed-pay item ────────────────────────────────────────
-const FixedPayItemCard = ({ item, info, st, comments, readOnly, onApprove, onReject, onCommentChange }) => {
-    const showTot  = !info || info.show;
-    const positive = (info?.remaining ?? 0) >= 0;
+const Metric = ({ label, value, sub, tone }) => (
+    <div className="min-w-[118px] flex-1 rounded-[14px] bg-(--bg-app)/60 px-3 py-2">
+        <p className="text-[11px] text-(--text-muted)">{label}</p>
+        <p className={cx('text-sm font-semibold', tone || 'text-(--text-main)')}>{value}</p>
+        {sub && <p className="text-[11px] text-(--text-muted)">{sub}</p>}
+    </div>
+);
 
+const PayLine = ({ item, st, comments, readOnly, onApprove, onReject, onCommentChange, accent, badges, metrics, adjust, showBillRate = true }) => {
+    const d = DECISION[st] || DECISION.PENDING;
     return (
-        <div className={`rounded-xl border p-4 space-y-3 transition-colors ${
-            st === 'APPROVED' ? 'bg-emerald-500/5 border-emerald-500/20' :
-            st === 'REJECTED' ? 'bg-red-500/5 border-red-500/20' :
-            'bg-(--bg-surface) border-(--border-subtle)'
-        }`}>
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
-                        <User size={14} />
-                    </div>
+        <article className={cx(
+            'relative overflow-hidden rounded-[22px] border bg-(--bg-surface) p-4 pl-5 transition-colors sm:p-5 sm:pl-6',
+            st === 'APPROVED' ? 'border-emerald-500/40' : st === 'REJECTED' ? 'border-rose-500/40' : 'border-(--border-subtle)',
+        )}>
+            <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1" style={{ background: accent }} />
+
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                    <Avatar name={`${item.first_name} ${item.last_name}`} size={38} />
                     <div className="min-w-0">
-                        <p className="text-sm font-bold text-(--text-main) truncate">{item.first_name} {item.last_name}</p>
-                        <p className="text-[10px] font-mono text-(--text-muted) uppercase tracking-tight mt-0.5">{item.employee_code}</p>
+                        <p className="truncate text-sm font-semibold text-(--text-main)">{item.first_name} {item.last_name}</p>
+                        <p className="font-mono text-[11px] text-(--text-muted)">{item.employee_code}</p>
                     </div>
                 </div>
-                {readOnly && (
-                    <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                    }`}>
-                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                        {st === 'REJECTED' && <XCircle size={11} />}
-                        {st}
-                    </span>
-                )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                <div className="col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Segment Period</p>
-                    <p className="font-bold text-(--text-main) mt-0.5 font-mono text-[11px]">{fmtDate(item.segment_start)} – {fmtDate(item.segment_end)}</p>
-                    <p className="text-[10px] text-(--text-muted) font-bold mt-0.5">
-                        {parseFloat(item.approved_hours).toFixed(2)} hrs approved
-                        {parseFloat(item.pay_rate) > 0 && ` · accrues @ ${fmt(item.pay_rate)}/hr`}
-                    </p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Amount (Balance Sheet)</p>
-                    <p className="font-bold text-(--brand-primary) mt-0.5">{fmt(info?.balance ?? 0)}</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Fixed Pay</p>
-                    <p className="font-bold text-amber-600 mt-0.5">{fmt(info?.fixedPay ?? item.fixed_pay_per_period)}</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Adjustment</p>
-                    <div className="mt-0.5 flex justify-start">
-                        <InlineAdjust employeeId={item.employee_id} itemId={item.id}
-                            show={!!info?.showAdj} adjNet={info?.adjNet || 0} />
-                    </div>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Total Amount</p>
-                    {showTot ? (
-                        <p className={`font-bold mt-0.5 ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
-                            {fmt(info?.remaining ?? 0)}
-                            <span className={`text-[10px] ml-1 ${positive ? 'text-emerald-500' : 'text-red-400'}`}>
-                                {positive ? 'left' : 'overdrawn'}
-                            </span>
-                        </p>
-                    ) : (
-                        <p className="text-(--text-muted) mt-0.5 text-[10px] font-bold">Part of combined</p>
-                    )}
-                </div>
-                <div className="col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Client</p>
-                    <p className="font-bold text-(--text-main) mt-0.5 truncate">{item.client_name}</p>
-                    <p className="text-[10px] text-(--text-muted) font-bold">{fmt(item.bill_rate)}/hr</p>
-                </div>
-            </div>
-
-            {readOnly ? (
-                comments && (
-                    <div className="flex items-start gap-2 bg-(--bg-app) border border-(--border-subtle) rounded-lg px-3 py-2">
-                        <MessageSquare size={12} className="text-(--text-muted) shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-(--text-main) font-bold leading-relaxed">{comments}</p>
-                    </div>
-                )
-            ) : (
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted) flex items-center gap-1 mb-1">
-                        <MessageSquare size={10} /> Comment
-                    </label>
-                    <textarea value={comments || ''} onChange={e => onCommentChange(e.target.value)} rows={2}
-                        placeholder="Optional comment…"
-                        className="w-full px-2.5 py-2 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none" />
-                </div>
-            )}
-            {!readOnly && (
-                <div className="flex gap-2 pt-1">
-                    <button onClick={onApprove} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                        <CheckCircle size={13} /> Approve
-                    </button>
-                    <button onClick={onReject} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                        <XCircle size={13} /> Reject
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ─── Mobile card — Non-LCA item ───────────────────────────────────────────────
-const NonLcaItemCard = ({ item, bufInfo, st, comments, readOnly, onApprove, onReject, onCommentChange }) => {
-    const totalWithAdj = bufInfo ? bufInfo.totalWithAdj : parseFloat(item.total_amount);
-
-    return (
-        <div className={`rounded-xl border p-4 space-y-3 transition-colors ${
-            st === 'APPROVED' ? 'bg-emerald-500/5 border-emerald-500/20' :
-            st === 'REJECTED' ? 'bg-red-500/5 border-red-500/20' :
-            'bg-(--bg-surface) border-(--border-subtle)'
-        }`}>
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 text-[10px] font-bold shrink-0">
-                        <User size={14} />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-(--text-main) truncate">{item.first_name} {item.last_name}</p>
-                        <p className="text-[10px] font-mono text-(--text-muted) uppercase tracking-tight mt-0.5">{item.employee_code}</p>
-                    </div>
-                </div>
-                {readOnly && (
-                    <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                    }`}>
-                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                        {st === 'REJECTED' && <XCircle size={11} />}
-                        {st}
-                    </span>
-                )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                {item.segment_start && (
-                    <div className="col-span-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Segment Period</p>
-                        <p className="font-bold text-(--text-main) mt-0.5 font-mono text-[11px]">{fmtDate(item.segment_start)} – {fmtDate(item.segment_end)}</p>
+                {readOnly ? (
+                    <Chip tone={d.tone} icon={d.icon}>{d.label}</Chip>
+                ) : (
+                    <div className="inline-flex rounded-full border border-(--border-subtle) p-1">
+                        <button
+                            type="button"
+                            onClick={onApprove}
+                            className={cx('flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold outline-none transition-colors', st === 'APPROVED' ? 'bg-emerald-500 text-white' : 'text-emerald-500 hover:bg-emerald-500/10')}
+                        >
+                            <CheckCircle size={13} /> Approve
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onReject}
+                            className={cx('flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold outline-none transition-colors', st === 'REJECTED' ? 'bg-rose-500 text-white' : 'text-rose-500 hover:bg-rose-500/10')}
+                        >
+                            <XCircle size={13} /> Reject
+                        </button>
                     </div>
                 )}
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Approved Hrs</p>
-                    <p className="font-bold text-(--text-main) mt-0.5">{parseFloat(item.approved_hours).toFixed(2)} hrs</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Pay Rate</p>
-                    <p className="font-bold text-(--text-main) mt-0.5">{fmt(item.pay_rate)}/hr</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Amount</p>
-                    <p className="font-bold text-(--brand-primary) mt-0.5">{fmt(item.total_amount)}</p>
-                    <p className="text-[10px] text-(--text-muted) mt-0.5">hrs × rate</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Adjustment</p>
-                    <div className="mt-0.5 flex justify-start">
-                        <InlineAdjust employeeId={item.employee_id} itemId={item.id}
-                            show={!!bufInfo?.showAdj} adjNet={bufInfo?.adjNet || 0} />
-                    </div>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Total Amount</p>
-                    <p className="font-bold text-emerald-600 mt-0.5">{fmt(totalWithAdj)}</p>
-                </div>
-                <div className="col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Client</p>
-                    <p className="font-bold text-(--text-main) mt-0.5 truncate">{item.client_name}</p>
-                    <p className="text-[10px] text-(--text-muted) font-bold">{fmt(item.bill_rate)}/hr</p>
-                </div>
             </div>
 
-            {readOnly ? (
-                comments && (
-                    <div className="flex items-start gap-2 bg-(--bg-app) border border-(--border-subtle) rounded-lg px-3 py-2">
-                        <MessageSquare size={12} className="text-(--text-muted) shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-(--text-main) font-bold leading-relaxed">{comments}</p>
-                    </div>
-                )
-            ) : (
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted) flex items-center gap-1 mb-1">
-                        <MessageSquare size={10} /> Comment
-                    </label>
-                    <textarea value={comments || ''} onChange={e => onCommentChange(e.target.value)} rows={2}
-                        placeholder="Optional comment…"
-                        className="w-full px-2.5 py-2 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none" />
-                </div>
-            )}
-            {!readOnly && (
-                <div className="flex gap-2 pt-1">
-                    <button onClick={onApprove} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                        <CheckCircle size={13} /> Approve
-                    </button>
-                    <button onClick={onReject} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                        <XCircle size={13} /> Reject
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
+            {badges && <div className="mt-3 flex flex-wrap items-center gap-2">{badges}</div>}
 
-// ─── Desktop table — LCA section ─────────────────────────────────────────────
-const LcaTable = ({ items, buffers, itemStates, readOnly, setStatus, setComment }) => (
-    <div className="overflow-x-auto">
-        <table className="w-full text-left table-auto min-w-[1100px]">
-            <thead className="bg-purple-500/8 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle)">
-                <tr>
-                    <th className="px-4 py-3 w-40">Employee</th>
-                    <th className="px-4 py-3">Segment Period</th>
-                    <th className="px-4 py-3 text-right">Approved Hrs</th>
-                    <th className="px-4 py-3 text-right">Pay Rate</th>
-                    <th className="px-4 py-3 text-right">Total Amount</th>
-                    <th className="px-4 py-3 text-right w-44">Adjustment</th>
-                    <th className="px-4 py-3 text-right">Buffer</th>
-                    <th className="px-4 py-3 w-32">Client (Bill Rate)</th>
-                    <th className="px-4 py-3 text-right">LCA / Period</th>
-                    <th className="px-4 py-3">Comments</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-(--border-subtle)">
-                {items.map(item => {
-                    const state    = itemStates[item.id] || {};
-                    const st       = state.item_status;
-                    const comments = state.comments || '';
-                    const bufInfo  = buffers[item.id];
-                    return (
-                        <tr key={item.id} className={`transition-colors ${
-                            st === 'APPROVED' ? 'bg-emerald-500/5' :
-                            st === 'REJECTED' ? 'bg-red-500/5' : 'hover:bg-(--bg-app)'
-                        }`}>
-                            <td className="px-4 py-3 w-40">
-                                <div className="font-bold text-(--text-main) text-sm break-words whitespace-normal max-w-[140px]">{item.first_name} {item.last_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-mono uppercase tracking-tight mt-0.5">{item.employee_code}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                                {item.segment_start ? (
-                                    <div className="font-mono text-xs font-bold text-(--text-main) whitespace-nowrap">
-                                        {fmtDate(item.segment_start)}<span className="text-(--text-muted) mx-1">–</span>{fmtDate(item.segment_end)}
-                                    </div>
-                                ) : <span className="text-(--text-muted) text-sm">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold text-(--text-main) text-sm">{parseFloat(item.approved_hours).toFixed(2)} hrs</td>
-                            <td className="px-4 py-3 text-right text-sm text-(--text-main) font-bold">{fmt(item.pay_rate)}/hr</td>
-                            <td className="px-4 py-3 text-right">
-                                <span className="font-bold text-(--brand-primary) text-sm">{fmt(item.total_amount)}</span>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <InlineAdjust employeeId={item.employee_id} itemId={item.id}
-                                    show={!!bufInfo?.showAdj} adjNet={bufInfo?.adjNet || 0} />
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                {(() => {
-                                    if (!bufInfo || !bufInfo.show) return (
-                                        <div><span className="text-(--text-muted) text-sm">—</span>
-                                        <div className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">Part of combined</div></div>
-                                    );
-                                    const { buffer, isMulti, segments } = bufInfo;
-                                    const isPositive = !item.lca_wage_per_period || buffer > 0;
-                                    return (
-                                        <div>
-                                            <span className={`font-bold text-sm ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(buffer)}</span>
-                                            <div className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
-                                                {isPositive ? 'Surplus' : 'No Surplus'}
-                                            </div>
-                                            {isMulti && segments && <div className="text-[10px] text-(--text-muted) mt-0.5">{segments} segs combined</div>}
-                                        </div>
-                                    );
-                                })()}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-(--text-main) w-32 max-w-[128px]">
-                                <div className="font-bold truncate" title={item.client_name}>{item.client_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-bold mt-0.5">({fmt(item.bill_rate)}/hr)</div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                {item.lca_wage_per_period != null
-                                    ? <span className="font-bold text-purple-600 text-sm">{fmt(item.lca_wage_per_period)}</span>
-                                    : <div><span className="text-(--text-muted) text-sm">—</span></div>
-                                }
-                            </td>
-                            <td className="px-4 py-3 max-w-[160px]">
-                                {readOnly ? (
-                                    comments ? <p className="text-[10px] text-(--text-main) font-bold break-words whitespace-normal">{comments}</p>
-                                             : <span className="text-(--text-muted) text-sm">—</span>
-                                ) : (
-                                    <textarea value={comments} onChange={e => setComment(item.id, e.target.value)} rows={2}
-                                        placeholder="Optional…"
-                                        className="w-full px-2 py-1.5 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none min-w-[120px]" />
-                                )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                                {readOnly ? (
-                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                    }`}>
-                                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                                        {st === 'REJECTED' && <XCircle size={11} />}
-                                        {st}
-                                    </span>
-                                ) : (
-                                    <div className="flex items-center gap-1.5 justify-center">
-                                        <button onClick={() => setStatus(item.id, 'APPROVED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                                            <CheckCircle size={12} /> Approve
-                                        </button>
-                                        <button onClick={() => setStatus(item.id, 'REJECTED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                                            <XCircle size={12} /> Reject
-                                        </button>
-                                    </div>
-                                )}
-                            </td>
-                        </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    </div>
-);
+            <div className="mt-3 flex flex-wrap gap-2">{metrics}</div>
 
-// ─── Desktop table — C2C Fixed Pay section ───────────────────────────────────
-//
-// Deliberately a different shape from the LCA table. There is no "approved hours ×
-// pay rate" figure to show, because a fixed-pay row does not earn here: the earnings
-// already landed on the balance sheet when the invoices were paid. What matters is
-// the balance, what comes out of it, and what is left.
-const FixedPayTable = ({ items, fixedRows, itemStates, readOnly, setStatus, setComment }) => (
-    <div className="overflow-x-auto">
-        <table className="w-full text-left table-auto min-w-[1050px]">
-            <thead className="bg-amber-500/8 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle)">
-                <tr>
-                    <th className="px-4 py-3 w-40">Employee</th>
-                    <th className="px-4 py-3">Segment Period</th>
-                    <th className="px-4 py-3 text-right">Amount (Balance Sheet)</th>
-                    <th className="px-4 py-3 text-right">Fixed Pay</th>
-                    <th className="px-4 py-3 text-right w-44">Adjustment</th>
-                    <th className="px-4 py-3 text-right">Total Amount</th>
-                    <th className="px-4 py-3 w-32">Client (Bill Rate)</th>
-                    <th className="px-4 py-3">Comments</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-(--border-subtle)">
-                {items.map(item => {
-                    const state    = itemStates[item.id] || {};
-                    const st       = state.item_status;
-                    const comments = state.comments || '';
-                    const info     = fixedRows[item.id];
-                    return (
-                        <tr key={item.id} className={`transition-colors ${
-                            st === 'APPROVED' ? 'bg-emerald-500/5' :
-                            st === 'REJECTED' ? 'bg-red-500/5' : 'hover:bg-(--bg-app)'
-                        }`}>
-                            <td className="px-4 py-3 w-40">
-                                <div className="font-bold text-(--text-main) text-sm break-words whitespace-normal max-w-[140px]">{item.first_name} {item.last_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-mono uppercase tracking-tight mt-0.5">{item.employee_code}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                                <div className="font-mono text-xs font-bold text-(--text-main) whitespace-nowrap">
-                                    {fmtDate(item.segment_start)}<span className="text-(--text-muted) mx-1">–</span>{fmtDate(item.segment_end)}
-                                </div>
-                                <div className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">
-                                    {parseFloat(item.approved_hours).toFixed(2)} hrs approved
-                                    {parseFloat(item.pay_rate) > 0 && (
-                                        <span title="The rate this placement's invoices accrue to the balance sheet at. It does not decide this payout — the fixed figure does.">
-                                            {' · '}accrues @ {fmt(item.pay_rate)}/hr
-                                        </span>
-                                    )}
-                                </div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <span className="font-bold text-(--brand-primary) text-sm">{fmt(info?.balance ?? 0)}</span>
-                                <div className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">Net balance</div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <span className="font-bold text-amber-600 text-sm">{fmt(info?.fixedPay ?? item.fixed_pay_per_period)}</span>
-                                <div className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">Per period</div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <InlineAdjust employeeId={item.employee_id} itemId={item.id}
-                                    show={!!info?.showAdj} adjNet={info?.adjNet || 0} />
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                {(() => {
-                                    if (!info || !info.show) return (
-                                        <div><span className="text-(--text-muted) text-sm">—</span>
-                                        <div className="text-[10px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">Part of combined</div></div>
-                                    );
-                                    const positive = info.remaining >= 0;
-                                    return (
-                                        <div>
-                                            <span className={`font-bold text-sm ${positive ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(info.remaining)}</span>
-                                            <div className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${positive ? 'text-emerald-500' : 'text-red-400'}`}>
-                                                {positive ? 'Balance left' : 'Overdrawn'}
-                                            </div>
-                                            <div className="text-[10px] text-(--text-muted) mt-0.5">drawn {fmt(info.drawn)}</div>
-                                            {info.isMulti && <div className="text-[10px] text-(--text-muted) mt-0.5">{info.placements} placements combined</div>}
-                                        </div>
-                                    );
-                                })()}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-(--text-main) w-32 max-w-[128px]">
-                                <div className="font-bold truncate" title={item.client_name}>{item.client_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-bold mt-0.5">({fmt(item.bill_rate)}/hr)</div>
-                            </td>
-                            <td className="px-4 py-3 max-w-[160px]">
-                                {readOnly ? (
-                                    comments ? <p className="text-[10px] text-(--text-main) font-bold break-words whitespace-normal">{comments}</p>
-                                             : <span className="text-(--text-muted) text-sm">—</span>
-                                ) : (
-                                    <textarea value={comments} onChange={e => setComment(item.id, e.target.value)} rows={2}
-                                        placeholder="Optional…"
-                                        className="w-full px-2 py-1.5 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none min-w-[120px]" />
-                                )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                                {readOnly ? (
-                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                    }`}>
-                                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                                        {st === 'REJECTED' && <XCircle size={11} />}
-                                        {st}
-                                    </span>
-                                ) : (
-                                    <div className="flex items-center gap-1.5 justify-center">
-                                        <button onClick={() => setStatus(item.id, 'APPROVED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                                            <CheckCircle size={12} /> Approve
-                                        </button>
-                                        <button onClick={() => setStatus(item.id, 'REJECTED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                                            <XCircle size={12} /> Reject
-                                        </button>
-                                    </div>
-                                )}
-                            </td>
-                        </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    </div>
-);
-
-// ─── Desktop table — Non-LCA section ─────────────────────────────────────────
-const NonLcaTable = ({ items, buffers, itemStates, readOnly, setStatus, setComment }) => (
-    <div className="overflow-x-auto">
-        <table className="w-full text-left table-auto min-w-[1050px]">
-            <thead className="bg-blue-500/8 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle)">
-                <tr>
-                    <th className="px-4 py-3 w-40">Employee</th>
-                    <th className="px-4 py-3">Segment Period</th>
-                    <th className="px-4 py-3 text-right">Approved Hrs</th>
-                    <th className="px-4 py-3 text-right">Pay Rate</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3 text-right w-44">Adjustment</th>
-                    <th className="px-4 py-3 text-right">Total Amount</th>
-                    <th className="px-4 py-3 w-32">Client (Bill Rate)</th>
-                    <th className="px-4 py-3">Comments</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-(--border-subtle)">
-                {items.map(item => {
-                    const state        = itemStates[item.id] || {};
-                    const st           = state.item_status;
-                    const comments     = state.comments || '';
-                    const bufInfo      = buffers[item.id];
-                    const adjNet       = bufInfo?.adjNet || 0;
-                    const totalWithAdj = bufInfo ? bufInfo.totalWithAdj : parseFloat(item.total_amount);
-                    return (
-                        <tr key={item.id} className={`transition-colors ${
-                            st === 'APPROVED' ? 'bg-emerald-500/5' :
-                            st === 'REJECTED' ? 'bg-red-500/5' : 'hover:bg-(--bg-app)'
-                        }`}>
-                            <td className="px-4 py-3 w-40">
-                                <div className="font-bold text-(--text-main) text-sm break-words whitespace-normal max-w-[140px]">{item.first_name} {item.last_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-mono uppercase tracking-tight mt-0.5">{item.employee_code}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                                {item.segment_start ? (
-                                    <div className="font-mono text-xs font-bold text-(--text-main) whitespace-nowrap">
-                                        {fmtDate(item.segment_start)}<span className="text-(--text-muted) mx-1">–</span>{fmtDate(item.segment_end)}
-                                    </div>
-                                ) : <span className="text-(--text-muted) text-sm">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold text-(--text-main) text-sm">{parseFloat(item.approved_hours).toFixed(2)} hrs</td>
-                            <td className="px-4 py-3 text-right text-sm text-(--text-main) font-bold">{fmt(item.pay_rate)}/hr</td>
-                            {/* Amount = hours × rate (no adjustment baked in) */}
-                            <td className="px-4 py-3 text-right">
-                                <span className="font-bold text-(--brand-primary) text-sm">{fmt(item.total_amount)}</span>
-                                <div className="text-[10px] text-(--text-muted) mt-0.5">hrs × rate</div>
-                            </td>
-                            {/* Adjustment */}
-                            <td className="px-4 py-3 text-right">
-                                <InlineAdjust employeeId={item.employee_id} itemId={item.id}
-                                    show={!!bufInfo?.showAdj} adjNet={bufInfo?.adjNet || 0} />
-                            </td>
-                            {/* Total Amount = Amount + Adjustment */}
-                            <td className="px-4 py-3 text-right">
-                                <span className="font-bold text-emerald-600 text-sm">{fmt(totalWithAdj)}</span>
-                                {bufInfo?.showAdj && adjNet !== 0 && (
-                                    <div className="text-[10px] text-(--text-muted) mt-0.5">incl. adj</div>
-                                )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-(--text-main) w-32 max-w-[128px]">
-                                <div className="font-bold truncate" title={item.client_name}>{item.client_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-bold mt-0.5">({fmt(item.bill_rate)}/hr)</div>
-                            </td>
-                            <td className="px-4 py-3 max-w-[160px]">
-                                {readOnly ? (
-                                    comments ? <p className="text-[10px] text-(--text-main) font-bold break-words whitespace-normal">{comments}</p>
-                                             : <span className="text-(--text-muted) text-sm">—</span>
-                                ) : (
-                                    <textarea value={comments} onChange={e => setComment(item.id, e.target.value)} rows={2}
-                                        placeholder="Optional…"
-                                        className="w-full px-2 py-1.5 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none min-w-[120px]" />
-                                )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                                {readOnly ? (
-                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                    }`}>
-                                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                                        {st === 'REJECTED' && <XCircle size={11} />}
-                                        {st}
-                                    </span>
-                                ) : (
-                                    <div className="flex items-center gap-1.5 justify-center">
-                                        <button onClick={() => setStatus(item.id, 'APPROVED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                                            <CheckCircle size={12} /> Approve
-                                        </button>
-                                        <button onClick={() => setStatus(item.id, 'REJECTED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                                            <XCircle size={12} /> Reject
-                                        </button>
-                                    </div>
-                                )}
-                            </td>
-                        </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    </div>
-);
-
-// ─── Catch-up (arrears) rows ─────────────────────────────────────────────────
-// Hours that belong to an earlier pay period but were approved too late for it.
-// Rendered apart from the regular rows because they answer a different question:
-// not "what did this employee earn this period" but "what do we still owe them
-// from a period that has already closed".
-const ArrearsRowMeta = ({ item }) => (
-    <div className="flex flex-wrap items-center gap-1.5">
-        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20 uppercase tracking-widest">
-            {item.source_period_label || 'Prior period'}
-        </span>
-        {hasBufferBasis(item) && (
-            <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-(--bg-app) text-(--text-muted) border border-(--border-subtle) uppercase tracking-widest"
-                title="That period was paid a set amount and is already settled, so this amount posts entirely to the buffer.">
-                To buffer
-            </span>
-        )}
-    </div>
-);
-
-const ArrearsItemCard = ({ item, adjNet, st, comments, readOnly, onApprove, onReject, onCommentChange }) => (
-    <div className={`rounded-xl border p-4 space-y-3 transition-colors ${
-        st === 'APPROVED' ? 'bg-emerald-500/5 border-emerald-500/20' :
-        st === 'REJECTED' ? 'bg-red-500/5 border-red-500/20' :
-        'bg-(--bg-surface) border-(--border-subtle)'
-    }`}>
-        <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-                <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-600 shrink-0">
-                    <History size={14} />
+            <div className="mt-4 grid gap-4 border-t border-(--border-subtle) pt-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.3fr)]">
+                <div className="min-w-0">
+                    <p className="text-[11px] text-(--text-muted)">Partner</p>
+                    <p className="truncate text-sm font-medium text-(--text-main)" title={item.client_name}>{item.client_name}</p>
+                    {showBillRate && <p className="text-[11px] text-(--text-muted)">{fmt(item.bill_rate)}/hr bill</p>}
                 </div>
                 <div className="min-w-0">
-                    <p className="text-sm font-bold text-(--text-main) truncate">{item.first_name} {item.last_name}</p>
-                    <p className="text-[10px] font-mono text-(--text-muted) uppercase tracking-tight mt-0.5">{item.employee_code}</p>
+                    <p className="mb-1 text-[11px] text-(--text-muted)">Adjustment</p>
+                    {adjust}
+                </div>
+                <div className="min-w-0">
+                    <p className="mb-1 flex items-center gap-1 text-[11px] text-(--text-muted)"><MessageSquare size={11} /> Comment</p>
+                    {readOnly ? (
+                        <p className="break-words text-sm text-(--text-main)">{comments || '—'}</p>
+                    ) : (
+                        <textarea
+                            value={comments || ''}
+                            onChange={e => onCommentChange(e.target.value)}
+                            rows={2}
+                            placeholder="Optional…"
+                            className="nx-input resize-none text-sm"
+                        />
+                    )}
                 </div>
             </div>
-            {readOnly && (
-                <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                    st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                    st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                    'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                }`}>
-                    {st === 'APPROVED' && <CheckCircle size={11} />}
-                    {st === 'REJECTED' && <XCircle size={11} />}
-                    {st}
-                </span>
-            )}
-        </div>
+        </article>
+    );
+};
 
-        <ArrearsRowMeta item={item} />
+const SegmentChip = ({ item }) => item.segment_start ? (
+    <Chip tone="slate" icon={CalendarDays}>{fmtDate(item.segment_start)} – {fmtDate(item.segment_end)}</Chip>
+) : null;
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <div className="col-span-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Days Being Caught Up</p>
-                <p className="font-bold text-(--text-main) mt-0.5 font-mono text-[11px]">{fmtDate(item.segment_start)} – {fmtDate(item.segment_end)}</p>
-            </div>
-            <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Unpaid Hrs</p>
-                <p className="font-bold text-(--text-main) mt-0.5">{parseFloat(item.approved_hours).toFixed(2)} hrs</p>
-            </div>
-            <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Pay Rate</p>
-                <p className="font-bold text-(--text-main) mt-0.5">{fmt(item.pay_rate)}/hr</p>
-                <p className="text-[9px] text-(--text-muted) font-bold mt-0.5">rate at the time</p>
-            </div>
-            {adjNet !== 0 && (
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Adjustment</p>
-                    <p className={`font-bold mt-0.5 ${adjNet > 0 ? 'text-green-600' : 'text-red-500'}`}>{adjNet > 0 ? '+' : ''}{fmt(adjNet)}</p>
-                </div>
-            )}
-            <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Amount</p>
-                <p className="font-bold text-purple-600 mt-0.5">{fmt(item.total_amount)}</p>
-            </div>
-            <div className="col-span-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted)">Client</p>
-                <p className="font-bold text-(--text-main) mt-0.5 truncate">{item.client_name}</p>
-            </div>
-        </div>
+// W2 row paid a set LCA wage; the difference accrues as buffer.
+const LcaLine = ({ item, bufInfo, ...rest }) => {
+    let bufferMetric;
+    if (!bufInfo || !bufInfo.show) {
+        bufferMetric = <Metric label="Buffer" value="—" sub="Part of combined" />;
+    } else {
+        const { buffer, isMulti, segments } = bufInfo;
+        const isPositive = !item.lca_wage_per_period || buffer > 0;
+        bufferMetric = (
+            <Metric
+                label="Buffer"
+                value={fmt(buffer)}
+                tone={isPositive ? 'text-emerald-500' : 'text-rose-500'}
+                sub={`${isPositive ? 'Surplus' : 'No surplus'}${isMulti && segments ? ` · ${segments} segments combined` : ''}`}
+            />
+        );
+    }
+    return (
+        <PayLine
+            item={item}
+            {...rest}
+            accent="linear-gradient(180deg,#d946ef,#8b5cf6)"
+            badges={<SegmentChip item={item} />}
+            metrics={
+                <>
+                    <Metric label="Approved hrs" value={`${parseFloat(item.approved_hours).toFixed(2)} hrs`} />
+                    <Metric label="Pay rate" value={`${fmt(item.pay_rate)}/hr`} />
+                    <Metric label="Total amount" value={fmt(item.total_amount)} tone="text-(--brand-primary)" />
+                    <Metric label="LCA / period" value={item.lca_wage_per_period != null ? fmt(item.lca_wage_per_period) : '—'} tone="text-fuchsia-500" />
+                    {bufferMetric}
+                </>
+            }
+            adjust={<InlineAdjust employeeId={item.employee_id} itemId={item.id} show={!!bufInfo?.showAdj} adjNet={bufInfo?.adjNet || 0} />}
+        />
+    );
+};
 
-        {readOnly ? (
-            comments && (
-                <div className="flex items-start gap-2 bg-(--bg-app) border border-(--border-subtle) rounded-lg px-3 py-2">
-                    <MessageSquare size={12} className="text-(--text-muted) shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-(--text-main) font-bold leading-relaxed">{comments}</p>
-                </div>
-            )
-        ) : (
-            <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-(--text-muted) flex items-center gap-1 mb-1">
-                    <MessageSquare size={10} /> Comment
-                </label>
-                <textarea value={comments || ''} onChange={e => onCommentChange(e.target.value)} rows={2}
-                    placeholder="Optional comment…"
-                    className="w-full px-2.5 py-2 text-[10px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none" />
-            </div>
-        )}
-        {!readOnly && (
-            <div className="flex gap-2 pt-1">
-                <button onClick={onApprove} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                    <CheckCircle size={13} /> Approve
-                </button>
-                <button onClick={onReject} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold border transition-all outline-none ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                    <XCircle size={13} /> Reject
-                </button>
-            </div>
-        )}
-    </div>
-);
+// C2C row drawing a fixed figure out of the accrued balance.
+const FixedLine = ({ item, info, ...rest }) => {
+    let totalMetric;
+    if (!info || !info.show) {
+        totalMetric = <Metric label="Total amount" value="—" sub="Part of combined" />;
+    } else {
+        const positive = info.remaining >= 0;
+        totalMetric = (
+            <Metric
+                label="Total amount"
+                value={fmt(info.remaining)}
+                tone={positive ? 'text-emerald-500' : 'text-rose-500'}
+                sub={`${positive ? 'Balance left' : 'Overdrawn'} · drawn ${fmt(info.drawn)}${info.isMulti ? ` · ${info.placements} engagements` : ''}`}
+            />
+        );
+    }
+    return (
+        <PayLine
+            item={item}
+            {...rest}
+            accent="linear-gradient(180deg,#f59e0b,#f97316)"
+            badges={
+                <>
+                    <SegmentChip item={item} />
+                    <span className="text-[11px] text-(--text-muted)">
+                        {parseFloat(item.approved_hours).toFixed(2)} hrs approved
+                        {parseFloat(item.pay_rate) > 0 && (
+                            <span title="The rate this engagement's invoices accrue to the ledger at. It does not decide this payout — the fixed figure does.">
+                                {' · '}accrues @ {fmt(item.pay_rate)}/hr
+                            </span>
+                        )}
+                    </span>
+                </>
+            }
+            metrics={
+                <>
+                    <Metric label="Ledger balance" value={fmt(info?.balance ?? 0)} tone="text-(--brand-primary)" sub="Net balance" />
+                    <Metric label="Fixed pay" value={fmt(info?.fixedPay ?? item.fixed_pay_per_period)} tone="text-amber-500" sub="Per period" />
+                    {totalMetric}
+                </>
+            }
+            adjust={<InlineAdjust employeeId={item.employee_id} itemId={item.id} show={!!info?.showAdj} adjNet={info?.adjNet || 0} />}
+        />
+    );
+};
 
-const ArrearsTable = ({ items, arrearsAdj, itemStates, readOnly, setStatus, setComment }) => (
-    <div className="overflow-x-auto">
-        <table className="w-full text-left table-auto min-w-[1050px]">
-            <thead className="bg-purple-500/8 text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle)">
-                <tr>
-                    <th className="px-4 py-3 w-40">Employee</th>
-                    <th className="px-4 py-3">Catch-up For</th>
-                    <th className="px-4 py-3">Days Being Caught Up</th>
-                    <th className="px-4 py-3 text-right">Unpaid Hrs</th>
-                    <th className="px-4 py-3 text-right">Pay Rate</th>
-                    <th className="px-4 py-3 text-right w-44">Adjustment</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3 w-32">Client</th>
-                    <th className="px-4 py-3">Comments</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-(--border-subtle)">
-                {items.map(item => {
-                    const state    = itemStates[item.id] || {};
-                    const st       = state.item_status;
-                    const comments = state.comments || '';
-                    const adjNet   = arrearsAdj[item.id] || 0;
-                    return (
-                        <tr key={item.id} className={`transition-colors ${
-                            st === 'APPROVED' ? 'bg-emerald-500/5' :
-                            st === 'REJECTED' ? 'bg-red-500/5' : 'hover:bg-(--bg-app)'
-                        }`}>
-                            <td className="px-4 py-3 w-40">
-                                <div className="font-bold text-(--text-main) text-sm break-words whitespace-normal max-w-[140px]">{item.first_name} {item.last_name}</div>
-                                <div className="text-[10px] text-(--text-muted) font-mono uppercase tracking-tight mt-0.5">{item.employee_code}</div>
-                            </td>
-                            <td className="px-4 py-3"><ArrearsRowMeta item={item} /></td>
-                            <td className="px-4 py-3">
-                                <div className="font-mono text-xs font-bold text-(--text-main) whitespace-nowrap">
-                                    {fmtDate(item.segment_start)}<span className="text-(--text-muted) mx-1">–</span>{fmtDate(item.segment_end)}
-                                </div>
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold text-(--text-main) text-sm">{parseFloat(item.approved_hours).toFixed(2)} hrs</td>
-                            <td className="px-4 py-3 text-right text-sm text-(--text-main) font-bold">
-                                {fmt(item.pay_rate)}/hr
-                                <div className="text-[9px] text-(--text-muted) font-bold uppercase tracking-widest mt-0.5">rate at the time</div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <InlineAdjust employeeId={item.employee_id} itemId={item.id} arrears adjNet={adjNet} />
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                                <span className="font-bold text-purple-600 text-sm">{fmt(item.total_amount)}</span>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-(--text-main) w-32 max-w-[128px]">
-                                <div className="font-bold truncate" title={item.client_name}>{item.client_name}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                                {readOnly ? (
-                                    <span className="text-xs text-(--text-main) font-bold">{comments || '—'}</span>
-                                ) : (
-                                    <textarea value={comments} onChange={e => setComment(item.id, e.target.value)} rows={2}
-                                        placeholder="Optional comment…"
-                                        className="w-full min-w-[150px] px-2 py-1.5 text-[11px] font-bold bg-(--bg-app) text-(--text-main) border border-(--border-subtle) rounded-lg focus:border-(--brand-primary) outline-none resize-none" />
-                                )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                                {readOnly ? (
-                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border shadow-sm ${
-                                        st === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                        st === 'REJECTED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                    }`}>
-                                        {st === 'APPROVED' && <CheckCircle size={11} />}
-                                        {st === 'REJECTED' && <XCircle size={11} />}
-                                        {st}
-                                    </span>
-                                ) : (
-                                    <div className="flex items-center gap-1.5 justify-center">
-                                        <button onClick={() => setStatus(item.id, 'APPROVED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'APPROVED' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-(--bg-surface) text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10'}`}>
-                                            <CheckCircle size={12} /> Approve
-                                        </button>
-                                        <button onClick={() => setStatus(item.id, 'REJECTED')}
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all outline-none shadow-sm ${st === 'REJECTED' ? 'bg-red-500 text-white border-red-500' : 'bg-(--bg-surface) text-red-500 border-red-500/30 hover:bg-red-500/10'}`}>
-                                            <XCircle size={12} /> Reject
-                                        </button>
-                                    </div>
-                                )}
-                            </td>
-                        </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    </div>
+// Row paid exactly the hours worked.
+const HourlyLine = ({ item, bufInfo, ...rest }) => {
+    const adjNet       = bufInfo?.adjNet || 0;
+    const totalWithAdj = bufInfo ? bufInfo.totalWithAdj : parseFloat(item.total_amount);
+    return (
+        <PayLine
+            item={item}
+            {...rest}
+            accent="linear-gradient(180deg,#0ea5e9,#22d3ee)"
+            badges={<SegmentChip item={item} />}
+            metrics={
+                <>
+                    <Metric label="Approved hrs" value={`${parseFloat(item.approved_hours).toFixed(2)} hrs`} />
+                    <Metric label="Pay rate" value={`${fmt(item.pay_rate)}/hr`} />
+                    <Metric label="Amount" value={fmt(item.total_amount)} tone="text-(--brand-primary)" sub="hrs × rate" />
+                    <Metric label="Total amount" value={fmt(totalWithAdj)} tone="text-emerald-500" sub={bufInfo?.showAdj && adjNet !== 0 ? 'incl. adjustment' : undefined} />
+                </>
+            }
+            adjust={<InlineAdjust employeeId={item.employee_id} itemId={item.id} show={!!bufInfo?.showAdj} adjNet={adjNet} />}
+        />
+    );
+};
+
+// Hours from an earlier period approved too late for that period's run.
+const ArrearsLine = ({ item, adjNet, ...rest }) => (
+    <PayLine
+        item={item}
+        {...rest}
+        showBillRate={false}
+        accent="linear-gradient(180deg,#8b5cf6,#6366f1)"
+        badges={
+            <>
+                <Chip tone="fuchsia" icon={History}>{item.source_period_label || 'Prior period'}</Chip>
+                {hasBufferBasis(item) && (
+                    <span title="That period was paid a set amount and is already settled, so this amount posts entirely to the buffer.">
+                        <Chip tone="slate">To buffer</Chip>
+                    </span>
+                )}
+                <Chip tone="slate" icon={CalendarDays}>{fmtDate(item.segment_start)} – {fmtDate(item.segment_end)}</Chip>
+            </>
+        }
+        metrics={
+            <>
+                <Metric label="Unpaid hrs" value={`${parseFloat(item.approved_hours).toFixed(2)} hrs`} />
+                <Metric label="Pay rate" value={`${fmt(item.pay_rate)}/hr`} sub="Rate at the time" />
+                <Metric label="Amount" value={fmt(item.total_amount)} tone="text-violet-500" />
+            </>
+        }
+        adjust={<InlineAdjust employeeId={item.employee_id} itemId={item.id} arrears adjNet={adjNet} />}
+    />
 );
 
 // ─── Main modal ─────────────────────────────────────────────────────────────────
@@ -1280,14 +580,12 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
     const [refreshMsg, setRefreshMsg]   = useState('');
     const [error, setError]             = useState('');
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [groupKey, setGroupKey]       = useState(null);
 
     const [adjustments, setAdjustments]   = useState(initialRun.adjustments || []);
 
-
-
-    // Split items by section. Catch-up rows come first because they are the
-    // exception the reviewer needs to notice, and they are held out of the
-    // regular LCA/non-LCA split entirely: they carry no lca_wage_per_period, so
+    // Split items by section. Catch-up rows are held out of the regular
+    // LCA/non-LCA split entirely: they carry no lca_wage_per_period, so
     // including them would distort the buffer of the placement's regular rows.
     const arrearsItems = useMemo(() => (currentRun.items || []).filter(i => i.item_type === 'ARREARS'), [currentRun.items]);
     const regularItems = useMemo(() => (currentRun.items || []).filter(i => i.item_type !== 'ARREARS'), [currentRun.items]);
@@ -1299,9 +597,6 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
     const lcaItems     = useMemo(() => regularItems.filter(i => !isFixedRow(i) &&  hasBufferBasis(i)), [regularItems]);
     const nonLcaItems  = useMemo(() => regularItems.filter(i => !isFixedRow(i) && !hasBufferBasis(i)), [regularItems]);
 
-    // Fixed rows are held out of computeItemBuffers for the same reason arrears are:
-    // they carry no lca_wage_per_period and no earnings, so feeding them into the
-    // buffer grouping would corrupt it.
     // Exactly one row per employee carries their run-wide adjustment.
     //
     // The rule mirrors submitPayrollRun so the screen names the same row the ledger
@@ -1362,10 +657,10 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
             });
             const recomputed   = updatedRun.recomputed ?? 0;
             const arrearsAdded = updatedRun.arrears_added ?? 0;
-            if (recomputed === 0) setRefreshMsg('Already up to date — no unpaid approved timesheets found.');
+            if (recomputed === 0) setRefreshMsg('Already up to date — no unpaid approved time logs found.');
             else {
-                const parts = [`${recomputed} pending item${recomputed !== 1 ? 's' : ''} recomputed`];
-                if (arrearsAdded > 0) parts.push(`${arrearsAdded} catch-up row${arrearsAdded !== 1 ? 's' : ''}`);
+                const parts = [`${recomputed} pending line${recomputed !== 1 ? 's' : ''} recomputed`];
+                if (arrearsAdded > 0) parts.push(`${arrearsAdded} catch-up line${arrearsAdded !== 1 ? 's' : ''}`);
                 setRefreshMsg(parts.join(', ') + '.');
             }
         } catch (err) {
@@ -1380,11 +675,11 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
             await managementAPI.submitPayrollRun(currentRun.id, { items });
             setConfirmOpen(false); onSubmitted();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to submit payroll. Please try again.');
+            setError(err.response?.data?.error || 'Failed to submit the pay run. Please try again.');
         } finally { setSubmitting(false); }
     };
 
-    // Called from a row's Adjustment cell. The reason lives in that row's Comments
+    // Called from a line's adjustment cell. The reason lives in that line's comment
     // box, so the comment (if typed) is sent as the description and a neutral
     // fallback is used otherwise — the API requires one.
     const handleAddAdjustment = async (employeeId, type, amount, itemId) => {
@@ -1407,11 +702,11 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
     };
 
     const handleDeleteAdjustment = async (adjId) => {
-        try { await managementAPI.deletePayrollAdjustment(currentRun.id, adjId); setAdjustments(prev => prev.filter(a => a.id !== adjId)); } catch { }
+        try { await managementAPI.deletePayrollAdjustment(currentRun.id, adjId); setAdjustments(prev => prev.filter(a => a.id !== adjId)); } catch { /* ignore */ }
     };
 
     const handleExport = () => {
-        const headers = ['Section', 'Employee', 'Employee Code', 'Segment Period', 'Approved Hours', 'Pay Rate', 'Amount', 'Adjustment', 'LCA Wage', 'LCA / Period', 'Fixed Pay', 'Total Amount', 'Buffer', 'Client', 'Bill Rate', 'Comments', 'Status'];
+        const headers = ['Section', 'Consultant', 'Consultant Code', 'Segment Period', 'Approved Hours', 'Pay Rate', 'Amount', 'Adjustment', 'LCA Wage', 'LCA / Period', 'Fixed Pay', 'Total Amount', 'Buffer', 'Partner', 'Bill Rate', 'Comments', 'Status'];
         const keys    = ['section', 'emp_name', 'employee_code', 'segment_period', 'approved_hours', 'pay_rate_fmt', 'amount_fmt', 'adjustment_fmt', 'lca_wage_fmt', 'lca_per_period_fmt', 'fixed_pay_fmt', 'total_amount_fmt', 'buffer_fmt', 'client_name', 'bill_rate_fmt', 'comments', 'status'];
         const rows = (currentRun.items || []).map(item => {
             const st        = itemStates[item.id]?.item_status || item.item_status || 'PENDING';
@@ -1430,14 +725,14 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
             const segPeriod = item.segment_start ? `${fmtDate(item.segment_start)} – ${fmtDate(item.segment_end)}` : `${fmtDate(currentRun.period_start)} – ${fmtDate(currentRun.period_end)}`;
             return {
                 section:            isArrears ? `Catch-up — ${item.source_period_label || 'prior period'}`
-                                  : isFixed   ? 'Fixed Pay (C2C)'
-                                  : isLca     ? 'As per LCA Wage' : 'Not as per LCA Wage',
+                                  : isFixed   ? 'Fixed Draw (C2C)'
+                                  : isLca     ? 'LCA Wage' : 'Hourly Pay',
                 emp_name:           `${item.first_name} ${item.last_name}`,
                 employee_code:      item.employee_code,
                 segment_period:     segPeriod,
                 approved_hours:     parseFloat(item.approved_hours).toFixed(2),
                 // A fixed-pay row has no pay rate and no hours x rate amount. Its
-                // 'Amount' column is the balance-sheet figure it draws against.
+                // 'Amount' column is the ledger figure it draws against.
                 pay_rate_fmt:       fmt(item.pay_rate),
                 amount_fmt:         isFixed ? fmt(fixInfo?.balance ?? 0) : fmt(item.total_amount),
                 adjustment_fmt:     adjNet !== 0 ? `${adjNet > 0 ? '+' : ''}$${Math.abs(adjNet).toFixed(2)}` : '—',
@@ -1455,64 +750,58 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
                 status:             st,
             };
         });
-        exportToExcel(rows, headers, keys, `payroll_${currentRun.period_label}_${currentRun.year}`);
+        exportToExcel(rows, headers, keys, `pay_run_${currentRun.period_label}_${currentRun.year}`);
     };
 
     const pendingCount  = Object.values(itemStates).filter(s => s.item_status === 'PENDING').length;
     const approvedCount = Object.values(itemStates).filter(s => s.item_status === 'APPROVED').length;
     const rejectedCount = Object.values(itemStates).filter(s => s.item_status === 'REJECTED').length;
+    const totalCount    = approvedCount + rejectedCount + pendingCount;
     const run = currentRun;
 
-    const exportBtn = (
-        <button onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/20 transition-all outline-none shadow-sm shrink-0">
-            <Download size={13} /><span className="hidden sm:inline">Export</span>
-        </button>
-    );
+    const groups = [
+        { key: 'arrears', label: 'Catch-up',   icon: History,     items: arrearsItems, subtitle: "Approved after that period's pay run closed" },
+        { key: 'fixed',   label: 'Fixed draw', icon: Wallet,      items: fixedItems,   subtitle: 'C2C · total = balance − fixed pay ± adjustment' },
+        { key: 'lca',     label: 'LCA wage',   icon: ShieldCheck, items: lcaItems,     subtitle: 'W2 · buffer = earnings − LCA per period' },
+        { key: 'hourly',  label: 'Hourly pay', icon: Users,       items: nonLcaItems,  subtitle: 'Total = approved hrs × pay rate + adjustments' },
+    ];
+    const visibleGroups = groups.filter(g => g.items.length > 0);
+    const activeGroup   = visibleGroups.find(g => g.key === groupKey) || visibleGroups[0];
+
+    const lineProps = (item) => ({
+        item,
+        st:              itemStates[item.id]?.item_status || 'PENDING',
+        comments:        itemStates[item.id]?.comments || '',
+        readOnly,
+        onApprove:       () => setStatus(item.id, 'APPROVED'),
+        onReject:        () => setStatus(item.id, 'REJECTED'),
+        onCommentChange: (v) => setComment(item.id, v),
+    });
 
     const footer = readOnly ? (
-        <div className="flex flex-wrap items-center justify-between w-full gap-2">
-            <div className="flex items-center gap-2 text-xs text-(--text-muted) font-bold uppercase tracking-widest">
-                <Lock size={14} className="text-(--brand-primary) shrink-0" />
-                <span className="hidden sm:inline">Submitted — locked.</span>
-                <span className="sm:hidden text-[10px]">Locked</span>
-            </div>
-            {exportBtn}
+        <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-sm text-(--text-muted)">
+                <Lock size={14} className="shrink-0 text-(--brand-primary)" /> Submitted — locked
+            </span>
+            <Btn variant="success" icon={Download} onClick={handleExport}>Export</Btn>
         </div>
     ) : (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3">
-            <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest">
-                <span className="text-emerald-600">{approvedCount} Approved</span>
-                <span className="text-red-500">{rejectedCount} Rejected</span>
-                {pendingCount > 0 && <span className="text-amber-500">{pendingCount} Pending</span>}
-                {refreshMsg && <span className="text-blue-500 normal-case font-bold text-[10px] tracking-normal">{refreshMsg}</span>}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end w-full sm:w-auto">
-                <button onClick={handleRefresh} disabled={refreshing || submitting} title="Refresh"
-                    className="flex items-center gap-1.5 px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-blue-500/10 text-blue-600 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all outline-none shadow-sm disabled:opacity-50 shrink-0">
-                    <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-                    <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-                </button>
-                {exportBtn}
-                <button onClick={onClose} disabled={submitting || refreshing}
-                    className="px-4 sm:px-5 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-(--text-main) bg-(--bg-surface) border border-(--border-subtle) rounded-xl hover:opacity-80 outline-none transition-all disabled:opacity-50 shrink-0">
-                    Cancel
-                </button>
-                <button onClick={() => { setError(''); setRefreshMsg(''); setConfirmOpen(true); }}
-                    disabled={submitting || refreshing || run.items?.length === 0}
-                    className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-(--brand-primary-text) bg-(--brand-primary) rounded-xl hover:opacity-90 outline-none transition-all disabled:opacity-50 shadow-sm active:scale-95 shrink-0">
-                    {submitting ? <><Loader2 size={13} className="animate-spin" /> Submitting...</> : <><CheckCircle size={13} /> Submit Payroll</>}
-                </button>
-            </div>
+        <div className="flex w-full flex-wrap items-center justify-end gap-2">
+            <Btn icon={RefreshCw} onClick={handleRefresh} disabled={refreshing || submitting} title="Pull in newly approved time logs" className={refreshing ? '[&_svg]:animate-spin' : ''}>
+                {refreshing ? 'Refreshing…' : 'Refresh'}
+            </Btn>
+            <Btn variant="success" icon={Download} onClick={handleExport}>Export</Btn>
+            <Btn onClick={onClose} disabled={submitting || refreshing}>Cancel</Btn>
+            <Btn
+                variant="primary"
+                icon={submitting ? Loader2 : CheckCircle}
+                onClick={() => { setError(''); setRefreshMsg(''); setConfirmOpen(true); }}
+                disabled={submitting || refreshing || run.items?.length === 0}
+            >
+                {submitting ? 'Submitting…' : 'Submit pay run'}
+            </Btn>
         </div>
     );
-
-    const headerRight = readOnly
-        ? <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest hidden sm:block">Submitted — Read Only</span>
-        : run.status === 'DRAFT'
-            ? (
-                <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest hidden lg:block">Draft — Review &amp; Submit</span>
-            ) : null;
 
     const adjustCtx = {
         adjustments,
@@ -1522,295 +811,139 @@ const PayrollDetailModal = ({ run: initialRun, readOnly, onClose, onSubmitted })
         remove: handleDeleteAdjustment,
     };
 
+    const aside = (
+        <div className="space-y-4">
+            <div className="rounded-[22px] p-5 text-white" style={{ background: 'var(--brand-gradient)', boxShadow: '0 20px 40px -24px var(--brand-glow)' }}>
+                <p className="flex items-center gap-1.5 text-xs text-white/80"><Banknote size={13} /> Pay run</p>
+                <p className="mt-2 text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{run.period_label} {run.year}</p>
+                <p className="text-xs text-white/80">{fmtDate(run.period_start)} — {fmtDate(run.period_end)}</p>
+                <div className="mt-4">
+                    <div className="flex h-1.5 overflow-hidden rounded-full bg-white/25">
+                        <div className="h-full bg-white" style={{ width: totalCount ? `${(approvedCount / totalCount) * 100}%` : 0 }} />
+                        <div className="h-full bg-white/50" style={{ width: totalCount ? `${(rejectedCount / totalCount) * 100}%` : 0 }} />
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-white/85">{approvedCount + rejectedCount} of {totalCount} lines decided</p>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                {readOnly
+                    ? <Chip tone="green" icon={Lock}>Submitted · read only</Chip>
+                    : run.status === 'DRAFT' ? <Chip tone="amber" icon={Clock}>Draft · review &amp; submit</Chip> : null}
+                {adjustments.length > 0 && <Chip tone="brand">{adjustments.length} adjustment{adjustments.length !== 1 ? 's' : ''}</Chip>}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+                {[['Approved', approvedCount, 'text-emerald-500'], ['Rejected', rejectedCount, 'text-rose-500'], ['Pending', pendingCount, 'text-amber-500']].map(([label, val, tone]) => (
+                    <div key={label} className="rounded-[14px] border border-(--border-subtle) bg-(--bg-surface) px-2 py-2 text-center">
+                        <p className={cx('text-lg font-semibold', tone)} style={{ fontFamily: 'var(--font-display)' }}>{val}</p>
+                        <p className="text-[11px] text-(--text-muted)">{label}</p>
+                    </div>
+                ))}
+            </div>
+
+            {error && <Notice tone="rose" icon={AlertTriangle}>{error}</Notice>}
+            {refreshMsg && <Notice tone="sky" icon={Info}>{refreshMsg}</Notice>}
+
+            {arrearsItems.length > 0 && (
+                <Notice tone="brand" icon={History}>
+                    <b className="text-(--text-main)">
+                        {arrearsItems.length} catch-up line{arrearsItems.length !== 1 ? 's' : ''}
+                        {run.arrears_summary?.hours ? ` (${run.arrears_summary.hours} hrs, ${fmt(run.arrears_summary.amount)})` : ''}
+                        {run.arrears_summary?.periods?.length ? ` from ${run.arrears_summary.periods.join(', ')}` : ''}.
+                    </b>{' '}
+                    Approved hours earlier pay runs never paid. Approve or reject each one.
+                </Notice>
+            )}
+            {run.arrears_summary?.unpriced_hours > 0 && (
+                <Notice tone="amber" icon={AlertTriangle}>
+                    <b>{run.arrears_summary.unpriced_hours} unpaid approved hours could not be included</b> — their engagement has no pay rate. Add one, then Refresh. Pay Audit lists them all.
+                </Notice>
+            )}
+            {run.pending_timesheets?.timesheet_count > 0 && !readOnly && (
+                <Notice tone="amber" icon={AlertTriangle}>
+                    <b>
+                        {run.pending_timesheets.timesheet_count} time log{run.pending_timesheets.timesheet_count !== 1 ? 's' : ''} overlapping this period
+                        {run.pending_timesheets.employee_count ? ` (${run.pending_timesheets.employee_count} consultant${run.pending_timesheets.employee_count !== 1 ? 's' : ''})` : ''} not approved yet.
+                    </b>{' '}
+                    Submitting now is fine — anything approved later arrives as a catch-up line next run.
+                </Notice>
+            )}
+        </div>
+    );
+
     return (
         <AdjustCtx.Provider value={adjustCtx}>
-            <BaseModal isOpen onClose={onClose} icon={<Receipt size={16} />}
-                title={`Payroll — ${run.period_label} ${run.year}`}
+            <BaseModal
+                isOpen
+                onClose={onClose}
+                icon={<Banknote size={18} />}
+                title={`Pay run — ${run.period_label} ${run.year}`}
                 subtitle={`${fmtDate(run.period_start)} to ${fmtDate(run.period_end)}`}
-                headerRight={headerRight} footer={footer} noPadding>
-
-                {error && (
-                    <div className="mx-4 sm:mx-6 mt-4 p-3 bg-red-500/10 text-red-500 text-xs rounded-xl border border-red-500/20 font-bold flex items-center gap-2">
-                        <AlertTriangle size={14} /> {error}
-                    </div>
-                )}
-
-                {(arrearsItems.length > 0 || run.arrears_summary?.unpriced_hours > 0 || (run.pending_timesheets?.timesheet_count > 0 && !readOnly)) && (
-                    <div className="mx-4 sm:mx-6 mt-4 space-y-2">
-                        {arrearsItems.length > 0 && (
-                            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-start gap-2">
-                                <History size={14} className="text-purple-600 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-(--text-main) font-bold leading-relaxed">
-                                    This run includes {arrearsItems.length} catch-up row{arrearsItems.length !== 1 ? 's' : ''}
-                                    {run.arrears_summary?.hours ? ` (${run.arrears_summary.hours} hrs, ${fmt(run.arrears_summary.amount)})` : ''}
-                                    {run.arrears_summary?.periods?.length ? ` from ${run.arrears_summary.periods.join(', ')}` : ''}.
-                                    <span className="font-normal text-(--text-muted) block mt-0.5">
-                                        These are approved hours that earlier payroll runs never paid. Approve or reject each one individually.
-                                    </span>
-                                </p>
+                footer={footer}
+                noPadding
+            >
+                <DetailLayout
+                    aside={aside}
+                    sections={visibleGroups.map(g => ({ key: g.key, label: g.label, icon: g.icon, count: g.items.length }))}
+                    active={activeGroup?.key}
+                    onSelect={setGroupKey}
+                >
+                    {!activeGroup ? (
+                        <EmptyState icon={Banknote} title="No pay lines for this period" text="No W2 consultants with approved time logs fall in this period." />
+                    ) : (
+                        <>
+                            <SectionTitle icon={activeGroup.icon} title={activeGroup.label} subtitle={activeGroup.subtitle} />
+                            <div className="space-y-3">
+                                {activeGroup.key === 'arrears' && arrearsItems.map(item => (
+                                    <ArrearsLine key={item.id} {...lineProps(item)} adjNet={arrearsAdj[item.id] || 0} />
+                                ))}
+                                {activeGroup.key === 'fixed' && fixedItems.map(item => (
+                                    <FixedLine key={item.id} {...lineProps(item)} info={fixedRows[item.id]} />
+                                ))}
+                                {activeGroup.key === 'lca' && lcaItems.map(item => (
+                                    <LcaLine key={item.id} {...lineProps(item)} bufInfo={buffers[item.id]} />
+                                ))}
+                                {activeGroup.key === 'hourly' && nonLcaItems.map(item => (
+                                    <HourlyLine key={item.id} {...lineProps(item)} bufInfo={buffers[item.id]} />
+                                ))}
                             </div>
-                        )}
-                        {run.arrears_summary?.unpriced_hours > 0 && (
-                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
-                                <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-(--text-main) font-bold leading-relaxed">
-                                    {run.arrears_summary.unpriced_hours} unpaid approved hours could not be included — their placement has no pay rate on file.
-                                    <span className="font-normal text-(--text-muted) block mt-0.5">
-                                        Payroll cannot price them. Add a pay rate to the placement, then Refresh to pull them in. See the Reconcile page for the full list.
-                                    </span>
-                                </p>
-                            </div>
-                        )}
-                        {run.pending_timesheets?.timesheet_count > 0 && !readOnly && (
-                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2">
-                                <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-(--text-main) font-bold leading-relaxed">
-                                    {run.pending_timesheets.timesheet_count} timesheet{run.pending_timesheets.timesheet_count !== 1 ? 's' : ''} overlapping this period
-                                    {run.pending_timesheets.employee_count ? ` (${run.pending_timesheets.employee_count} employee${run.pending_timesheets.employee_count !== 1 ? 's' : ''})` : ''} are not approved yet.
-                                    <span className="font-normal text-(--text-muted) block mt-0.5">
-                                        Submitting now is fine — anything approved later will appear as a catch-up row in the next run.
-                                    </span>
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {run.items?.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-(--text-muted) font-bold uppercase tracking-widest text-xs gap-2 px-4 text-center">
-                        <Receipt size={32} className="opacity-30" />
-                        No W2 employees with approved timesheets for this period.
-                    </div>
-                ) : (
-                    <>
-                        {/* ── Mobile cards ─────────────────────────────── */}
-                        <div className="lg:hidden px-2 py-2 space-y-2">
-                            {arrearsItems.length > 0 && (
-                                <div className="rounded-xl border border-purple-500/40 overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-2 px-3 py-2 border-b border-purple-500/25 bg-purple-500/10">
-                                        <div className="w-5 h-5 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
-                                            <History size={10} className="text-purple-600" />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600">Prior Period Catch-up</span>
-                                        <span className="ml-auto text-[10px] font-bold bg-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full border border-purple-500/20 shrink-0">{arrearsItems.length}</span>
-                                    </div>
-                                    <div className="p-2 space-y-2">
-                                        {arrearsItems.map(item => (
-                                            <ArrearsItemCard key={item.id} item={item} adjNet={arrearsAdj[item.id] || 0}
-                                                st={itemStates[item.id]?.item_status || 'PENDING'}
-                                                comments={itemStates[item.id]?.comments || ''}
-                                                readOnly={readOnly}
-                                                onApprove={() => setStatus(item.id, 'APPROVED')}
-                                                onReject={() => setStatus(item.id, 'REJECTED')}
-                                                onCommentChange={v => setComment(item.id, v)} />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {fixedItems.length > 0 && (
-                                <div className="rounded-xl border border-amber-500/25 overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-500/20 bg-amber-500/5">
-                                        <div className="w-5 h-5 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                                            <Wallet size={10} className="text-amber-600" />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Fixed Pay (C2C)</span>
-                                        <span className="ml-auto text-[10px] font-bold bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-500/20 shrink-0">{fixedItems.length}</span>
-                                    </div>
-                                    <div className="p-2 space-y-2">
-                                        {fixedItems.map(item => (
-                                            <FixedPayItemCard key={item.id} item={item} info={fixedRows[item.id]}
-                                                st={itemStates[item.id]?.item_status || 'PENDING'}
-                                                comments={itemStates[item.id]?.comments || ''}
-                                                readOnly={readOnly}
-                                                onApprove={() => setStatus(item.id, 'APPROVED')}
-                                                onReject={() => setStatus(item.id, 'REJECTED')}
-                                                onCommentChange={v => setComment(item.id, v)} />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {lcaItems.length > 0 && (
-                                <div className="rounded-xl border border-purple-500/25 overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-2 px-3 py-2 border-b border-purple-500/20 bg-purple-500/5">
-                                        <div className="w-5 h-5 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
-                                            <ShieldCheck size={10} className="text-purple-600" />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600">As per LCA Wage</span>
-                                        <span className="ml-auto text-[10px] font-bold bg-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full border border-purple-500/20 shrink-0">{lcaItems.length}</span>
-                                    </div>
-                                    <div className="p-2 space-y-2">
-                                    {lcaItems.map(item => (
-                                        <LcaItemCard key={item.id} item={item} bufInfo={buffers[item.id]}
-                                            st={itemStates[item.id]?.item_status || 'PENDING'}
-                                            comments={itemStates[item.id]?.comments || ''}
-                                            readOnly={readOnly}
-                                            onApprove={() => setStatus(item.id, 'APPROVED')}
-                                            onReject={() => setStatus(item.id, 'REJECTED')}
-                                            onCommentChange={v => setComment(item.id, v)} />
-                                    ))}
-                                    </div>
-                                </div>
-                            )}
-                            {nonLcaItems.length > 0 && (
-                                <div className="rounded-xl border border-blue-500/25 overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-2 px-3 py-2 border-b border-blue-500/20 bg-blue-500/5">
-                                        <div className="w-5 h-5 rounded-lg bg-blue-500/15 flex items-center justify-center shrink-0">
-                                            <Users size={10} className="text-blue-600" />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Not as per LCA Wage</span>
-                                        <span className="ml-auto text-[10px] font-bold bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full border border-blue-500/20 shrink-0">{nonLcaItems.length}</span>
-                                    </div>
-                                    <div className="p-2 space-y-2">
-                                        {nonLcaItems.map(item => (
-                                            <NonLcaItemCard key={item.id} item={item} bufInfo={buffers[item.id]}
-                                                st={itemStates[item.id]?.item_status || 'PENDING'}
-                                                comments={itemStates[item.id]?.comments || ''}
-                                                readOnly={readOnly}
-                                                onApprove={() => setStatus(item.id, 'APPROVED')}
-                                                onReject={() => setStatus(item.id, 'REJECTED')}
-                                                onCommentChange={v => setComment(item.id, v)} />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* ── Desktop sections ─────────────────────────── */}
-                        <div className="hidden lg:block px-3 py-2 space-y-2">
-                            {arrearsItems.length > 0 && (
-                                <div className="rounded-2xl border border-purple-500/40 overflow-hidden shadow-sm">
-                                    <SectionHeading
-                                        title="Prior Period Catch-up"
-                                        subtitle="approved after that period's payroll closed"
-                                        count={arrearsItems.length}
-                                        accent="bg-purple-500/10"
-                                        iconBg="bg-purple-500/20"
-                                        iconColor="text-purple-600"
-                                        icon={History}
-                                    />
-                                    <ArrearsTable
-                                        items={arrearsItems}
-                                        arrearsAdj={arrearsAdj}
-                                        itemStates={itemStates}
-                                        readOnly={readOnly}
-                                        setStatus={setStatus}
-                                        setComment={setComment}
-                                    />
-                                </div>
-                            )}
-                            {fixedItems.length > 0 && (
-                                <div className="rounded-2xl border border-amber-500/40 overflow-hidden shadow-sm">
-                                    <SectionHeading
-                                        title="Fixed Pay (C2C)"
-                                        subtitle="total = balance − fixed pay ± adjustment"
-                                        count={fixedItems.length}
-                                        accent="bg-amber-500/10"
-                                        iconBg="bg-amber-500/20"
-                                        iconColor="text-amber-600"
-                                        icon={Wallet}
-                                    />
-                                    <FixedPayTable
-                                        items={fixedItems}
-                                        fixedRows={fixedRows}
-                                        itemStates={itemStates}
-                                        readOnly={readOnly}
-                                        setStatus={setStatus}
-                                        setComment={setComment}
-                                    />
-                                </div>
-                            )}
-                            {lcaItems.length > 0 && (
-                                <div className="rounded-2xl border border-purple-500/25 overflow-hidden shadow-sm">
-                                    <SectionHeading
-                                        title="As per LCA Wage"
-                                        subtitle="buffer = earnings − LCA/period"
-                                        count={lcaItems.length}
-                                        accent="bg-purple-500/5"
-                                        iconBg="bg-purple-500/15"
-                                        iconColor="text-purple-600"
-                                        icon={ShieldCheck}
-                                    />
-                                    <LcaTable
-                                        items={lcaItems}
-                                        buffers={buffers}
-                                        itemStates={itemStates}
-                                        readOnly={readOnly}
-                                        setStatus={setStatus}
-                                        setComment={setComment}
-                                    />
-                                </div>
-                            )}
-                            {nonLcaItems.length > 0 && (
-                                <div className="rounded-2xl border border-blue-500/25 overflow-hidden shadow-sm">
-                                    <SectionHeading
-                                        title="Not as per LCA Wage"
-                                        subtitle="total = approved hrs × pay rate + adjustments"
-                                        count={nonLcaItems.length}
-                                        accent="bg-blue-500/5"
-                                        iconBg="bg-blue-500/15"
-                                        iconColor="text-blue-600"
-                                        icon={Users}
-                                    />
-                                    <NonLcaTable
-                                        items={nonLcaItems}
-                                        buffers={buffers}
-                                        itemStates={itemStates}
-                                        readOnly={readOnly}
-                                        setStatus={setStatus}
-                                        setComment={setComment}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
+                        </>
+                    )}
+                </DetailLayout>
             </BaseModal>
 
             {/* Confirm submit dialog */}
             {confirmOpen && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-(--bg-surface) w-full max-w-sm rounded-2xl shadow-2xl border border-(--border-subtle) p-5 sm:p-6 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="h-9 w-9 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600 shrink-0"><AlertTriangle size={18} /></div>
-                            <div>
-                                <h3 className="font-bold text-(--text-main) uppercase tracking-tight">Confirm Submission</h3>
-                                <p className="text-xs text-(--text-muted) mt-1">
-                                    Once submitted, this payroll run is <strong>locked</strong> and cannot be modified. Approved LCA employees will be reflected in the Balance Sheet immediately.
-                                    {adjustments.length > 0 && (
-                                        <span className="block mt-1 text-amber-600 font-bold">{adjustments.length} adjustment{adjustments.length !== 1 ? 's' : ''} will be included in posted amounts.</span>
-                                    )}
-                                    {arrearsItems.length > 0 && (
-                                        <span className="block mt-1 text-purple-600 font-bold">
-                                            {arrearsItems.length} catch-up row{arrearsItems.length !== 1 ? 's' : ''} from earlier periods will be settled with this run.
-                                        </span>
-                                    )}
-                                </p>
-                            </div>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="nx-pop w-full max-w-sm rounded-[28px] border border-(--border-subtle) bg-(--bg-surface) p-6" style={{ boxShadow: 'var(--shadow-floating)' }}>
+                        <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-amber-500/10 text-amber-500"><Lock size={20} /></span>
+                        <h3 className="mt-4 text-lg font-semibold text-(--text-main)">Lock this pay run?</h3>
+                        <p className="mt-1 text-sm text-(--text-muted)">
+                            Once submitted the run is locked and cannot be changed. Approved LCA lines reach the Earnings Ledger immediately.
+                        </p>
+                        {adjustments.length > 0 && (
+                            <p className="mt-2 text-xs font-semibold text-amber-600">{adjustments.length} adjustment{adjustments.length !== 1 ? 's' : ''} will be included in posted amounts.</p>
+                        )}
+                        {arrearsItems.length > 0 && (
+                            <p className="mt-1 text-xs font-semibold text-violet-500">
+                                {arrearsItems.length} catch-up line{arrearsItems.length !== 1 ? 's' : ''} from earlier periods will be settled with this run.
+                            </p>
+                        )}
+                        <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                            {[['Approved', approvedCount, 'text-emerald-500 bg-emerald-500/10'], ['Rejected', rejectedCount, 'text-rose-500 bg-rose-500/10'], ['Pending', pendingCount, 'text-amber-500 bg-amber-500/10']].map(([label, val, tone]) => (
+                                <div key={label} className={cx('rounded-[14px] p-3', tone)}>
+                                    <div className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{val}</div>
+                                    <div className="text-[11px]">{label}</div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="grid grid-cols-3 gap-2 mb-5 text-center">
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                                <div className="text-lg font-bold text-emerald-600">{approvedCount}</div>
-                                <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Approved</div>
-                            </div>
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                                <div className="text-lg font-bold text-red-500">{rejectedCount}</div>
-                                <div className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Rejected</div>
-                            </div>
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-                                <div className="text-lg font-bold text-amber-500">{pendingCount}</div>
-                                <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Pending</div>
-                            </div>
-                        </div>
-                        {error && <div className="mb-4 p-3 bg-red-500/10 text-red-500 text-xs rounded-xl border border-red-500/20 font-bold">{error}</div>}
-                        <div className="flex gap-3">
-                            <button onClick={() => setConfirmOpen(false)} disabled={submitting}
-                                className="flex-1 py-2.5 text-xs font-bold uppercase tracking-widest text-(--text-main) bg-(--bg-app) border border-(--border-subtle) rounded-xl hover:opacity-80 outline-none transition-all disabled:opacity-50">
-                                Go Back
-                            </button>
-                            <button onClick={handleSubmit} disabled={submitting}
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold uppercase tracking-widest text-(--brand-primary-text) bg-(--brand-primary) rounded-xl hover:opacity-90 outline-none transition-all disabled:opacity-50 shadow-sm">
-                                {submitting ? <><Loader2 size={13} className="animate-spin" /> Submitting...</> : 'Confirm & Submit'}
-                            </button>
+                        {error && <Notice tone="rose" icon={AlertTriangle} className="mt-4">{error}</Notice>}
+                        <div className="mt-5 flex gap-2">
+                            <Btn onClick={() => setConfirmOpen(false)} disabled={submitting} className="flex-1">Go back</Btn>
+                            <Btn variant="primary" icon={submitting ? Loader2 : CheckCircle} onClick={handleSubmit} disabled={submitting} className="flex-1">
+                                {submitting ? 'Submitting…' : 'Confirm'}
+                            </Btn>
                         </div>
                     </div>
                 </div>,

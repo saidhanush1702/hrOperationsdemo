@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileSpreadsheet, Search, Plus, Download, Loader2, ChevronRight } from 'lucide-react';
+import { BookOpen, Plus, Download, Users, UserCheck, UserX, ArrowUpRight } from 'lucide-react';
 import { managementAPI } from '../../../api/apiService';
 import BalanceSheetDetailModal from './BalanceSheetDetailModal';
 import AddAdjustmentModal from './AddAdjustmentModal';
@@ -9,8 +9,21 @@ import { exportToExcel } from '../../../utils/exportToExcel';
 import { fmtDate } from '../../../utils/dateUtils';
 import { rowOpen } from '../../../utils/rowClick';
 import { matchesSearch } from '../../../utils/searchMatch';
+import { PageHero, StatRail, StatTile, SearchInput, Btn, Avatar, EmptyState, LoadingState, cx } from '../../../components/ui/kit';
 
 const fmt$ = (v) => '$' + parseFloat(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const FlowRow = ({ label, value, sign, tone, bar, max }) => (
+    <div>
+        <div className="flex items-center justify-between gap-2 text-[11px]">
+            <span className="text-(--text-muted)">{label}</span>
+            <span className={cx('font-semibold', tone)}>{sign}{fmt$(value)}</span>
+        </div>
+        <div className="mt-1 h-1 overflow-hidden rounded-full bg-(--text-main)/5">
+            <div className={cx('h-full rounded-full', bar)} style={{ width: `${Math.min(100, (Math.abs(parseFloat(value) || 0) / max) * 100)}%` }} />
+        </div>
+    </div>
+);
 
 const BalanceSheet = () => {
     const [data, setData] = useState([]);
@@ -28,7 +41,7 @@ const BalanceSheet = () => {
             const res = await managementAPI.getBalanceSheets();
             setData(res.data);
         } catch (err) {
-            console.error("Failed to load balance sheets", err);
+            console.error("Failed to load the earnings ledger", err);
         } finally {
             setLoading(false);
         }
@@ -37,8 +50,8 @@ const BalanceSheet = () => {
     useEffect(() => { fetchData(); }, []);
     useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus]);
 
-    // Search first, so the tab counts reflect the current search the way the
-    // Workforce page does — tabs narrow the searched set, not the other way round.
+    // Search first, so the tile counts reflect the current search the way the
+    // Talent page does — tiles narrow the searched set, not the other way round.
     const searchedData = data.filter(row => {
         return matchesSearch(searchTerm,
             row.first_name, row.last_name, row.employee_code);
@@ -65,16 +78,16 @@ const BalanceSheet = () => {
             const txRows = res.data || [];
 
             if (txRows.length === 0) {
-                const headers = ['Employee Code', 'Name', 'Placement Earnings', 'Manual Additions', 'Manual Deductions', 'Fixed Pay Paid', 'Net Balance'];
+                const headers = ['Consultant Code', 'Name', 'Engagement Earnings', 'Manual Additions', 'Manual Deductions', 'Fixed Pay Paid', 'Net Balance'];
                 const keys    = ['employee_code', 'full_name', 'placement_earnings', 'manual_additions', 'manual_deductions', 'c2c_fixed_payouts', 'net_balance'];
                 const rows = filteredData.map(r => ({ ...r, full_name: `${r.first_name} ${r.last_name}` }));
-                exportToExcel(rows, headers, keys, 'balance_sheets');
+                exportToExcel(rows, headers, keys, 'earnings_ledger');
                 return;
             }
 
             const headers = [
-                'Employee Code', 'Employee Name', 'Section', 'Placement Code',
-                'Client', 'Pay Type', 'Transaction Type',
+                'Consultant Code', 'Consultant Name', 'Section', 'Engagement Code',
+                'Partner', 'Pay Type', 'Transaction Type',
                 'Invoice #', 'Date', 'Period',
                 'Hours', 'Pay Rate ($)', 'Amount ($)', 'Reason',
             ];
@@ -91,184 +104,98 @@ const BalanceSheet = () => {
                 pay_rate_fmt: r.pay_rate > 0  ? parseFloat(r.pay_rate).toFixed(2)  : '',
                 amount_fmt:   parseFloat(r.amount || 0).toFixed(2),
             }));
-            exportToExcel(rows, headers, keys, 'balance_sheet_detail');
+            exportToExcel(rows, headers, keys, 'earnings_ledger_detail');
         } catch (err) {
-            console.error('Balance sheet export failed:', err);
+            console.error('Earnings ledger export failed:', err);
         } finally {
             setExporting(false);
         }
     };
 
     return (
-        <div className="-mt-4 lg:-mt-8 -mx-4 lg:-mx-8 flex flex-col gap-2 animate-in fade-in duration-500">
-            <div className="flex flex-col h-[calc(100vh-4rem)] gap-2">
+        <div className="mx-auto max-w-[1600px] space-y-6">
+            <PageHero
+                icon={BookOpen}
+                eyebrow="Money"
+                title="Earnings ledger"
+                description="What every consultant has earned, been paid and still carries — engagement by engagement."
+                actions={
+                    <>
+                        <Btn variant="success" icon={Download} onClick={handleExport} disabled={exporting} title="Export to Excel">
+                            {exporting ? 'Preparing…' : 'Export'}
+                        </Btn>
+                        <Btn variant="primary" icon={Plus} onClick={() => setIsAddModalOpen(true)}>Add adjustment</Btn>
+                    </>
+                }
+            >
+                <StatRail>
+                    <StatTile label="All consultants" icon={Users} value={tabCounts.ALL} active={filterStatus === 'ALL'} onClick={() => setFilterStatus('ALL')} />
+                    <StatTile label="Active" icon={UserCheck} value={tabCounts.ACTIVE} active={filterStatus === 'ACTIVE'} onClick={() => setFilterStatus('ACTIVE')} />
+                    <StatTile label="Completed" icon={UserX} value={tabCounts.COMPLETED} active={filterStatus === 'COMPLETED'} onClick={() => setFilterStatus('COMPLETED')} />
+                </StatRail>
+            </PageHero>
 
-                {/* HEADER CARD */}
-                <div className="bg-(--bg-surface) px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border border-(--border-subtle) shadow-sm flex justify-between items-center shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 sm:h-10 sm:w-10 bg-(--brand-primary)/10 rounded-xl flex items-center justify-center text-(--brand-primary)">
-                            <FileSpreadsheet size={18} className="sm:w-5 sm:h-5" />
-                        </div>
-                        <div>
-                            <h1 className="text-base sm:text-lg font-bold uppercase tracking-tight text-(--text-main) leading-none">Employee Balance Ledger</h1>
-                            <p className="hidden sm:block text-[10px] text-(--text-muted) mt-1 uppercase tracking-widest font-bold">Track balance per employee</p>
-                        </div>
-                    </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-(--text-muted)"><span className="font-semibold text-(--text-main)">{filteredData.length}</span> consultant{filteredData.length !== 1 ? 's' : ''}</p>
+                <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Search name or consultant code…" className="w-full sm:w-80" />
+            </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleExport}
-                            title="Export to Excel"
-                            className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 w-9 h-9 sm:w-auto sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 shrink-0 outline-none"
-                        >
-                            <Download size={15} /> <span className="hidden sm:inline">Export</span>
-                        </button>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="bg-(--brand-primary) text-(--brand-primary-text) w-9 h-9 sm:w-auto sm:px-5 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 outline-none"
-                        >
-                            <Plus size={16} /> <span className="hidden sm:inline">Add Adjustment</span>
-                        </button>
-                    </div>
+            {loading ? (
+                <LoadingState text="Loading ledger…" />
+            ) : paginatedData.length === 0 ? (
+                <div className="rounded-[24px] border border-(--border-subtle) bg-(--bg-surface)">
+                    <EmptyState icon={BookOpen} title="No ledger records found" />
                 </div>
-
-                {/* TABLE CARD */}
-                <div className="bg-(--bg-surface) border border-(--border-subtle) rounded-2xl shadow-sm flex flex-col flex-1 overflow-hidden">
-                    <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 px-4 sm:px-6 py-3 border-b border-(--border-subtle) bg-(--bg-app)/30 shrink-0">
-                        <div className="flex p-1 bg-(--bg-surface) rounded-xl lg:rounded-lg border border-(--border-subtle) w-full lg:w-auto shadow-sm overflow-x-auto hide-scrollbar shrink-0">
-                            {['ALL', 'ACTIVE', 'COMPLETED'].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setFilterStatus(tab)}
-                                    className={`flex-1 lg:flex-none whitespace-nowrap px-3 sm:px-4 py-2 lg:py-1.5 rounded-lg lg:rounded-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 outline-none ${filterStatus === tab ? 'bg-(--brand-primary)/10 text-(--brand-primary)' : 'text-(--text-muted) hover:text-(--text-main)'}`}
-                                >
-                                    {tab}
-                                    <span className={`px-1.5 py-0.5 rounded-md text-[9px] leading-none ${filterStatus === tab ? 'bg-(--brand-primary) text-(--brand-primary-text)' : 'bg-(--border-subtle) text-(--text-muted)'}`}>
-                                        {tabCounts[tab]}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                            <div className="flex items-center justify-center px-3 py-1.5 bg-(--bg-surface) border border-(--border-subtle) rounded-lg shadow-sm w-auto shrink-0">
-                                <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest whitespace-nowrap">
-                                    {filteredData.length} Employee{filteredData.length !== 1 ? 's' : ''}
-                                </span>
-                            </div>
-                            <div className="relative w-full sm:w-64 xl:w-72">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-(--text-muted)">
-                                    <Search size={13} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Search name or employee code..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-8 pr-3 py-2 bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) rounded-xl text-xs font-bold focus:border-(--brand-primary) outline-none shadow-sm"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* MOBILE CARD LIST — hidden on sm+ */}
-                    <div className="sm:hidden flex-1 overflow-y-auto divide-y divide-(--border-subtle)">
-                        {loading ? (
-                            <div className="py-10 text-center text-xs text-(--text-muted) uppercase tracking-widest font-bold">Loading ledger data...</div>
-                        ) : paginatedData.length > 0 ? (
-                            paginatedData.map(row => (
-                                <div key={row.employee_id}
-                                    onClick={rowOpen(() => setSelectedEmployee(row))}
-                                    className="px-4 py-3.5 hover:bg-(--bg-app) transition-colors cursor-pointer">
-                                    <div className="flex justify-between items-start gap-3">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-xs font-bold text-(--text-main) truncate">{row.first_name} {row.last_name}</p>
-                                            <p className="text-[9px] text-(--text-muted) font-mono uppercase tracking-tight mt-0.5">{row.employee_code}</p>
-                                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${row.net_balance >= 0 ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'}`}>
-                                                    Net: {row.net_balance >= 0 ? '' : '-'}{fmt$(Math.abs(row.net_balance))}
-                                                </span>
-                                                <span className="text-[9px] text-green-600 font-mono">+{fmt$(row.manual_additions)}</span>
-                                                <span className="text-[9px] text-red-500 font-mono">-{fmt$(row.manual_deductions)}</span>
-                                                {row.c2c_fixed_payouts > 0 && (
-                                                    <span className="text-[9px] text-amber-600 font-mono" title="Fixed pay drawn by payroll">
-                                                        -{fmt$(row.c2c_fixed_payouts)} fixed
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {/* The whole card opens the ledger. */}
-                                        <ChevronRight size={14} className="text-(--text-muted) shrink-0 mt-1" />
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {paginatedData.map(row => {
+                        const net = parseFloat(row.net_balance) || 0;
+                        const max = Math.max(
+                            Math.abs(parseFloat(row.placement_earnings) || 0),
+                            Math.abs(parseFloat(row.manual_additions) || 0),
+                            Math.abs(parseFloat(row.manual_deductions) || 0),
+                            Math.abs(parseFloat(row.c2c_fixed_payouts) || 0),
+                            1,
+                        );
+                        return (
+                            <div
+                                key={row.employee_id}
+                                onClick={rowOpen(() => setSelectedEmployee(row))}
+                                title="Open ledger"
+                                className="group cursor-pointer rounded-[24px] border border-(--border-subtle) bg-(--bg-surface) p-5 transition-all hover:-translate-y-1 hover:border-(--brand-primary)/45"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Avatar name={`${row.first_name} ${row.last_name}`} size={42} />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-(--text-main)">{row.first_name} {row.last_name}</p>
+                                        <p className="font-mono text-[11px] text-(--text-muted)">{row.employee_code}</p>
                                     </div>
+                                    <ArrowUpRight size={16} className="text-(--text-muted) transition-colors group-hover:text-(--brand-primary)" />
                                 </div>
-                            ))
-                        ) : (
-                            <div className="py-12 text-center text-(--text-muted) font-bold uppercase tracking-widest text-xs">No records found.</div>
-                        )}
-                    </div>
 
-                    {/* DESKTOP TABLE — hidden on mobile */}
-                    <div className="hidden sm:flex flex-col flex-1 overflow-hidden">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <table className="w-full text-left table-fixed">
-                                <thead className="bg-(--bg-app) text-[10px] font-bold text-(--text-muted) uppercase tracking-widest border-b border-(--border-subtle) sticky top-0 z-10">
-                                    <tr>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[22%]">Employee</th>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[15%] text-right">Placement Earnings</th>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[13%] text-right">Manual Additions</th>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[13%] text-right">Manual Deductions</th>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[14%] text-right" title="Fixed pay handed to the employee by payroll, drawn out of their C2C balance.">Fixed Pay Paid</th>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[14%] text-right">Net Balance</th>
-                                        <th className="px-6 py-3 sm:py-3.5 w-[9%] text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-sm divide-y divide-(--border-subtle)">
-                                    {loading ? (
-                                        <tr><td colSpan="7" className="p-16 text-center text-(--text-muted) font-bold uppercase tracking-widest text-xs">Loading ledger data...</td></tr>
-                                    ) : paginatedData.length > 0 ? (
-                                        paginatedData.map(row => (
-                                            <tr key={row.employee_id}
-                                                onClick={rowOpen(() => setSelectedEmployee(row))}
-                                                title="View Ledger"
-                                                className="hover:bg-(--bg-app) transition-colors group cursor-pointer">
-                                                <td className="px-6 py-3 sm:py-3.5">
-                                                    <div className="text-xs font-bold text-(--text-main)">{row.first_name} {row.last_name}</div>
-                                                    <div className="text-[10px] text-(--text-muted) font-mono uppercase tracking-tight mt-0.5">{row.employee_code}</div>
-                                                </td>
-                                                <td className="px-6 py-3 sm:py-3.5 text-right font-bold text-(--text-main)">{fmt$(row.placement_earnings)}</td>
-                                                <td className="px-6 py-3 sm:py-3.5 text-right font-medium text-green-600">+{fmt$(row.manual_additions)}</td>
-                                                <td className="px-6 py-3 sm:py-3.5 text-right font-medium text-red-600">-{fmt$(row.manual_deductions)}</td>
-                                                <td className="px-6 py-3 sm:py-3.5 text-right font-medium text-amber-600">
-                                                    {row.c2c_fixed_payouts > 0 ? `-${fmt$(row.c2c_fixed_payouts)}` : <span className="text-(--text-muted)">—</span>}
-                                                </td>
-                                                <td className="px-6 py-3 sm:py-3.5 text-right">
-                                                    <span className={`px-2 py-1 rounded-lg text-xs font-bold border inline-block shadow-sm ${row.net_balance >= 0 ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'}`}>
-                                                        {row.net_balance >= 0 ? '' : '-'}{fmt$(Math.abs(row.net_balance))}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-3 sm:py-3.5 text-right">
-                                                    <button
-                                                        onClick={() => setSelectedEmployee(row)}
-                                                        className="text-[10px] font-bold uppercase tracking-widest bg-(--bg-surface) text-(--text-main) hover:bg-(--brand-primary) hover:text-(--brand-primary-text) hover:border-(--brand-primary) px-4 py-2 rounded-lg border border-(--border-subtle) transition-all shadow-sm outline-none"
-                                                    >
-                                                        View
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr><td colSpan="7" className="p-16 text-center text-(--text-muted) font-bold uppercase tracking-widest text-xs">No records found.</td></tr>
+                                <div className="mt-4">
+                                    <p className="text-[11px] text-(--text-muted)">Net balance</p>
+                                    <p className={cx('text-2xl font-semibold', net >= 0 ? 'text-(--text-main)' : 'text-rose-500')} style={{ fontFamily: 'var(--font-display)' }}>
+                                        {net >= 0 ? '' : '-'}{fmt$(Math.abs(net))}
+                                    </p>
+                                </div>
+
+                                <div className="mt-4 space-y-2.5 border-t border-(--border-subtle) pt-4">
+                                    <FlowRow label="Engagement earnings" value={row.placement_earnings} sign="" tone="text-(--text-main)" bar="bg-(--brand-primary)" max={max} />
+                                    <FlowRow label="Additions" value={row.manual_additions} sign="+" tone="text-emerald-500" bar="bg-emerald-500" max={max} />
+                                    <FlowRow label="Deductions" value={row.manual_deductions} sign="-" tone="text-rose-500" bar="bg-rose-500" max={max} />
+                                    {row.c2c_fixed_payouts > 0 && (
+                                        <FlowRow label="Fixed pay drawn" value={row.c2c_fixed_payouts} sign="-" tone="text-amber-500" bar="bg-amber-500" max={max} />
                                     )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <Pagination
-                        currentPage={currentPage}
-                        totalItems={filteredData.length}
-                        onPageChange={setCurrentPage}
-                    />
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
+            )}
+
+            <div className="overflow-hidden rounded-[20px] border border-(--border-subtle)">
+                <Pagination currentPage={currentPage} totalItems={filteredData.length} onPageChange={setCurrentPage} />
             </div>
 
             <AuditLogPanel module="balance-sheet" />

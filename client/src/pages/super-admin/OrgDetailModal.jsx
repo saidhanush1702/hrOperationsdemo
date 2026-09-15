@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Building2, Globe, MapPin, Users, Mail, Eye, EyeOff, Power, PowerOff, Loader2, ShieldOff, ShieldCheck } from 'lucide-react';
+import { Globe, MapPin, Users, Mail, Eye, EyeOff, Power, PowerOff, Loader2, ShieldOff, ShieldCheck, LayoutGrid, KeyRound } from 'lucide-react';
 import BaseModal from '../../components/ui/BaseModal';
 import { superAdminAPI } from '../../api/apiService';
+import { DetailLayout, SectionTitle, Fact, Chip, Btn, Avatar, EmptyState } from '../../components/ui/kit';
 
 const OrgDetailModal = ({ org, onClose, onStatusChange }) => {
     const [admins, setAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
     const [visiblePasswords, setVisiblePasswords] = useState({});
     const [suspending, setSuspending] = useState(false);
+    const [section, setSection] = useState('overview');
 
     useEffect(() => {
         if (!org) return;
@@ -31,148 +33,122 @@ const OrgDetailModal = ({ org, onClose, onStatusChange }) => {
             await superAdminAPI.toggleOrganizationStatus(org.id, org.is_active);
             onStatusChange();
         } catch {
-            alert(`Failed to ${action} organization.`);
+            alert(`Failed to ${action} tenant.`);
         } finally {
             setSuspending(false);
         }
     };
 
-    const suspendButton = org && (
-        <button
-            onClick={handleToggleSuspend}
-            disabled={suspending}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 ${
-                org.is_active
-                    ? 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white'
-                    : 'bg-green-500/10 text-green-500 border border-green-500/30 hover:bg-green-500 hover:text-white'
-            }`}
-        >
-            {suspending
-                ? <Loader2 size={14} className="animate-spin" />
-                : org.is_active
-                    ? <><PowerOff size={14} /> Suspend Organization</>
-                    : <><Power size={14} /> Activate Organization</>
-            }
-        </button>
-    );
-
-    const statusBadge = org && (
-        <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${
-            org.is_active
-                ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                : 'bg-red-500/10 text-red-500 border-red-500/20'
-        }`}>
-            {org.is_active ? <ShieldCheck size={11} /> : <ShieldOff size={11} />}
-            {org.is_active ? 'Active' : 'Suspended'}
-        </span>
+    const aside = org && (
+        <div>
+            <span className="flex h-16 w-16 items-center justify-center rounded-[20px] text-2xl font-semibold text-white" style={{ background: 'var(--brand-gradient)' }}>
+                {(org.name || '?').slice(0, 1).toUpperCase()}
+            </span>
+            <p className="mt-4 text-xl font-semibold text-(--text-main)" style={{ fontFamily: 'var(--font-display)' }}>{org.name}</p>
+            <p className="text-xs text-(--text-muted)">{org.domain || 'no-domain.com'}</p>
+            <div className="mt-3">
+                <Chip tone={org.is_active ? 'green' : 'rose'} icon={org.is_active ? ShieldCheck : ShieldOff}>{org.is_active ? 'Live' : 'Suspended'}</Chip>
+            </div>
+            <div className="mt-6">
+                <Btn
+                    variant={org.is_active ? 'danger' : 'success'}
+                    icon={suspending ? Loader2 : org.is_active ? PowerOff : Power}
+                    onClick={handleToggleSuspend}
+                    disabled={suspending}
+                    className="w-full"
+                >
+                    {org.is_active ? 'Suspend tenant' : 'Reactivate tenant'}
+                </Btn>
+            </div>
+        </div>
     );
 
     return (
         <BaseModal
             isOpen={!!org}
             onClose={onClose}
-            icon={<Building2 size={18} />}
+            icon={<Globe size={18} />}
             title={org?.name ?? ''}
-            subtitle="Organization Details"
-            headerRight={statusBadge}
-            footer={suspendButton}
+            subtitle="Tenant profile"
+            noPadding
         >
-            <div className="space-y-6">
-                {/* Org Info */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-(--bg-app) rounded-2xl p-4 border border-(--border-subtle) space-y-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5">
-                            <Globe size={10} /> Domain
-                        </p>
-                        <p className="text-sm font-semibold text-(--text-main)">{org?.domain || '—'}</p>
-                    </div>
-                    <div className="bg-(--bg-app) rounded-2xl p-4 border border-(--border-subtle) space-y-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5">
-                            <Users size={10} /> Admins
-                        </p>
-                        <p className="text-sm font-semibold text-(--text-main)">{org?.admin_count ?? '—'}</p>
-                    </div>
-                    <div className="col-span-2 bg-(--bg-app) rounded-2xl p-4 border border-(--border-subtle) space-y-1">
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5">
-                            <MapPin size={10} /> Address
-                        </p>
-                        <p className="text-sm font-semibold text-(--text-main)">{org?.address || '—'}</p>
-                    </div>
-                </div>
-
-                {/* Suspension warning */}
-                {org && !org.is_active && (
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border bg-red-500/10 text-red-500 border-red-500/20 text-xs font-bold uppercase tracking-widest">
-                        <ShieldOff size={15} />
-                        Organization is Suspended — all portal access is blocked
+            <DetailLayout
+                aside={aside}
+                active={section}
+                onSelect={setSection}
+                sections={[
+                    { key: 'overview', label: 'Overview', icon: LayoutGrid },
+                    { key: 'owners', label: 'Owner accounts', icon: KeyRound, count: loading ? undefined : admins.length },
+                ]}
+            >
+                {section === 'overview' && (
+                    <div className="space-y-5">
+                        <SectionTitle icon={LayoutGrid} title="Overview" subtitle="Identity of this workspace" />
+                        {org && !org.is_active && (
+                            <div className="flex items-center gap-3 rounded-[16px] border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-500">
+                                <ShieldOff size={16} /> This tenant is suspended — all portal access is blocked.
+                            </div>
+                        )}
+                        <div className="grid gap-4 rounded-[22px] border border-(--border-subtle) p-5 sm:grid-cols-2">
+                            <Fact icon={Globe} label="Domain" value={org?.domain} />
+                            <Fact icon={Users} label="Owner accounts" value={org?.admin_count} />
+                            <Fact icon={MapPin} label="Address" value={org?.address} className="sm:col-span-2" />
+                        </div>
                     </div>
                 )}
 
-                {/* Admin Credentials */}
-                <div className="space-y-3">
-                    <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5">
-                        <Users size={10} /> Org Admin Credentials
-                    </p>
-
-                    {loading ? (
-                        <div className="flex items-center justify-center py-10 text-(--text-muted)">
-                            <Loader2 size={20} className="animate-spin mr-2" /> Loading...
-                        </div>
-                    ) : admins.length === 0 ? (
-                        <p className="text-sm text-(--text-muted) text-center py-8">No org admins found.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {admins.map(admin => (
-                                <div key={admin.id} className="bg-(--bg-app) border border-(--border-subtle) rounded-2xl p-4 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="h-9 w-9 rounded-xl bg-(--bg-surface) border border-(--border-subtle) flex items-center justify-center text-sm font-bold text-(--text-muted) uppercase">
-                                                {(admin.first_name?.[0] || admin.email[0]).toUpperCase()}
+                {section === 'owners' && (
+                    <div>
+                        <SectionTitle icon={KeyRound} title="Owner accounts" subtitle="Sign-in credentials for this tenant's admins" />
+                        {loading ? (
+                            <div className="flex items-center justify-center py-10 text-sm text-(--text-muted)">
+                                <Loader2 size={18} className="mr-2 animate-spin" /> Loading…
+                            </div>
+                        ) : admins.length === 0 ? (
+                            <EmptyState icon={KeyRound} title="No owner accounts found" />
+                        ) : (
+                            <div className="grid gap-4 xl:grid-cols-2">
+                                {admins.map(admin => {
+                                    const name = admin.first_name || admin.last_name
+                                        ? `${admin.first_name || ''} ${admin.last_name || ''}`.trim()
+                                        : '—';
+                                    return (
+                                        <div key={admin.id} className="rounded-[22px] border border-(--border-subtle) bg-(--bg-app)/40 p-5">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar name={name !== '—' ? name : admin.email} size={42} />
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-semibold text-(--text-main)">{name}</p>
+                                                    <Chip tone={admin.is_active ? 'green' : 'rose'}>{admin.is_active ? 'Active' : 'Deactivated'}</Chip>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-(--text-main)">
-                                                    {admin.first_name || admin.last_name
-                                                        ? `${admin.first_name || ''} ${admin.last_name || ''}`.trim()
-                                                        : '—'}
-                                                </p>
-                                                <span className={`text-[10px] font-bold uppercase ${admin.is_active ? 'text-green-500' : 'text-red-400'}`}>
-                                                    {admin.is_active ? 'Active' : 'Deactivated'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-2.5">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1">
-                                                <Mail size={9} /> Username / Email
-                                            </p>
-                                            <p className="text-xs font-mono bg-(--bg-surface) border border-(--border-subtle) rounded-xl px-3 py-2.5 text-(--text-main) select-all">
-                                                {admin.email}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">Password</p>
-                                            <div className="flex items-center gap-2">
-                                                <p className="flex-1 text-xs font-mono bg-(--bg-surface) border border-(--border-subtle) rounded-xl px-3 py-2.5 text-(--text-main) select-all">
-                                                    {visiblePasswords[admin.id] ? admin.password : '••••••••••'}
-                                                </p>
-                                                <button
-                                                    onClick={() => togglePasswordVisibility(admin.id)}
-                                                    className="p-2.5 rounded-xl text-(--text-muted) hover:text-(--text-main) bg-(--bg-surface) border border-(--border-subtle) hover:border-(--text-main) transition-colors"
-                                                    title={visiblePasswords[admin.id] ? 'Hide password' : 'Show password'}
-                                                >
-                                                    {visiblePasswords[admin.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                                                </button>
+                                            <div className="mt-4 space-y-3">
+                                                <div>
+                                                    <p className="nx-label flex items-center gap-1"><Mail size={11} /> Username / Email</p>
+                                                    <p className="select-all rounded-[12px] border border-(--border-subtle) bg-(--bg-surface) px-3 py-2.5 font-mono text-xs text-(--text-main)">{admin.email}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="nx-label">Password</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="flex-1 select-all rounded-[12px] border border-(--border-subtle) bg-(--bg-surface) px-3 py-2.5 font-mono text-xs text-(--text-main)">
+                                                            {visiblePasswords[admin.id] ? admin.password : '••••••••••'}
+                                                        </p>
+                                                        <Btn
+                                                            size="icon"
+                                                            icon={visiblePasswords[admin.id] ? EyeOff : Eye}
+                                                            onClick={() => togglePasswordVisibility(admin.id)}
+                                                            title={visiblePasswords[admin.id] ? 'Hide password' : 'Show password'}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </DetailLayout>
         </BaseModal>
     );
 };

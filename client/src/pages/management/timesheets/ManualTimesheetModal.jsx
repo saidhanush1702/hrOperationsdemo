@@ -1,16 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Clock, Plus, AlertTriangle, CheckCircle, XCircle, User, Briefcase, ChevronRight } from 'lucide-react';
+import { Timer, Plus, AlertTriangle, CheckCircle2, XCircle, Hourglass, ClipboardCheck, User, Rocket } from 'lucide-react';
 import { timesheetAPI, managementAPI } from '../../../api/apiService';
 import BaseModal from '../../../components/ui/BaseModal';
 import { fmtDate } from '../../../utils/dateUtils';
+import { Btn, Chip, Field, Notice, EmptyState, LoadingState, cx } from '../../../components/ui/kit';
 
-const STATUS_BADGE = {
-    'Pending Approval': <span className="text-[10px] bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-orange-500/20">Pending</span>,
-    'Approved':  <span className="text-[10px] bg-green-500/10 text-green-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-green-500/20 inline-flex items-center gap-1"><CheckCircle size={9}/>Approved</span>,
-    'Rejected':  <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-red-500/20 inline-flex items-center gap-1"><XCircle size={9}/>Rejected</span>,
+const getStatusChip = (name) => {
+    if (name === 'Pending Approval') return <Chip tone="amber" icon={ClipboardCheck}>Needs review</Chip>;
+    if (name === 'Approved') return <Chip tone="green" icon={CheckCircle2}>Approved</Chip>;
+    if (name === 'Rejected') return <Chip tone="rose" icon={XCircle}>Sent back</Chip>;
+    return <Chip tone="slate" icon={Hourglass}>Awaiting</Chip>;
 };
-const getStatusBadge = (name) =>
-    STATUS_BADGE[name] ?? <span className="text-[10px] bg-(--bg-app) text-(--text-muted) px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-(--border-subtle)">Not Submitted</span>;
+
+const Node = ({ tone = 'slate', icon: Icon, last, children }) => (
+    <div className="relative pl-12">
+        <span
+            className={cx(
+                'absolute left-0 top-1 flex h-9 w-9 items-center justify-center rounded-full border',
+                tone === 'brand' ? 'border-transparent text-white' : tone === 'green' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500' : 'border-(--border-subtle) bg-(--bg-app) text-(--text-muted)',
+            )}
+            style={tone === 'brand' ? { background: 'var(--brand-gradient)' } : undefined}
+        >
+            <Icon size={15} />
+        </span>
+        {!last && <span className="absolute -bottom-3 left-[17px] top-11 w-px bg-(--border-subtle)" />}
+        {children}
+    </div>
+);
 
 const ManualTimesheetModal = ({ onClose, onRefresh }) => {
     const [employees,  setEmployees]  = useState([]);
@@ -21,7 +37,7 @@ const ManualTimesheetModal = ({ onClose, onRefresh }) => {
 
     const [existingTimesheets, setExistingTimesheets] = useState([]);
     const [allMissing,         setAllMissing]         = useState([]); // full list from backend
-    const [stagedCount,        setStagedCount]        = useState(0);  // how many the user has queued via +
+    const [stagedCount,        setStagedCount]        = useState(0);  // how many the user has queued
 
     const [initialLoading, setInitialLoading] = useState(true);
     const [loadingPeriods, setLoadingPeriods] = useState(false);
@@ -46,7 +62,7 @@ const ManualTimesheetModal = ({ onClose, onRefresh }) => {
         })();
     }, []);
 
-    // ── Reload existing timesheets + all missing periods for the placement ────
+    // ── Reload existing time logs + all missing periods for the engagement ────
     const loadPlacementData = useCallback(async (placementId) => {
         if (!placementId) {
             setExistingTimesheets([]); setAllMissing([]); setStagedCount(0);
@@ -66,7 +82,7 @@ const ManualTimesheetModal = ({ onClose, onRefresh }) => {
             setAllMissing(missingRes.data);
             setStagedCount(0);
         } catch {
-            setError('Failed to load timesheet periods.');
+            setError('Failed to load time log periods.');
         } finally {
             setLoadingPeriods(false);
         }
@@ -74,9 +90,9 @@ const ManualTimesheetModal = ({ onClose, onRefresh }) => {
 
     useEffect(() => { loadPlacementData(selectedPlacement); }, [selectedPlacement, loadPlacementData]);
 
-    // Derived: staged periods are the first `stagedCount` items from allMissing
+    // Staged periods are the first `stagedCount` items from allMissing
     const stagedPeriods = allMissing.slice(0, stagedCount);
-    // The next period the + button will stage
+    // The next period the add button will stage
     const nextToStage   = allMissing[stagedCount] ?? null;
 
     const handleStage = () => {
@@ -99,35 +115,27 @@ const ManualTimesheetModal = ({ onClose, onRefresh }) => {
             onRefresh();
             await loadPlacementData(selectedPlacement);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to create timesheets.');
+            setError(err.response?.data?.error || 'Failed to create time logs.');
         } finally {
             setCreating(false);
         }
     };
 
-    // ── Footer: Create button ─────────────────────────────────────────────────
     const modalFooter = stagedPeriods.length > 0 ? (
-        <div className="flex items-center justify-between w-full">
-            <span className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">
-                {stagedPeriods.length} period{stagedPeriods.length !== 1 ? 's' : ''} queued
+        <div className="flex w-full items-center justify-between gap-3">
+            <span className="text-sm text-(--text-muted)">
+                <b className="text-(--text-main)">{stagedPeriods.length}</b> period{stagedPeriods.length !== 1 ? 's' : ''} queued
             </span>
-            <button
-                onClick={handleCreate}
-                disabled={creating}
-                className="bg-(--brand-primary) text-white px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm hover:bg-(--brand-primary)/90 disabled:opacity-50 transition-all outline-none"
-            >
-                {creating
-                    ? <><Clock size={13} className="animate-spin" /> Creating…</>
-                    : <><Plus size={13} /> Create {stagedPeriods.length} Timesheet{stagedPeriods.length !== 1 ? 's' : ''}</>
-                }
-            </button>
+            <Btn variant="primary" icon={creating ? Timer : Plus} onClick={handleCreate} disabled={creating}>
+                {creating ? 'Creating…' : `Create ${stagedPeriods.length} time log${stagedPeriods.length !== 1 ? 's' : ''}`}
+            </Btn>
         </div>
     ) : null;
 
     if (initialLoading) {
         return (
-            <BaseModal isOpen={true} onClose={onClose} icon={<Clock size={16} />} title="Add Timesheet">
-                <div className="p-8 text-center text-xs font-bold text-(--text-muted) animate-pulse uppercase tracking-widest">Loading…</div>
+            <BaseModal isOpen={true} onClose={onClose} icon={<Timer size={18} />} title="Log time manually">
+                <LoadingState />
             </BaseModal>
         );
     }
@@ -135,154 +143,107 @@ const ManualTimesheetModal = ({ onClose, onRefresh }) => {
     const filteredPlacements = placements.filter(p => p.employee_id == selectedEmployee);
 
     return (
-        <BaseModal isOpen={true} onClose={onClose} icon={<Clock size={16} />} title="Add Timesheet" footer={modalFooter}>
-            <div className="space-y-4">
+        <BaseModal isOpen={true} onClose={onClose} icon={<Timer size={18} />} title="Log time manually" subtitle="Queue missing periods for an engagement" footer={modalFooter} noPadding>
+            <div className="grid min-h-full lg:grid-cols-[340px_minmax(0,1fr)]">
+                <aside className="space-y-4 border-b border-(--border-subtle) bg-(--bg-app)/40 p-5 lg:border-b-0 lg:border-r lg:p-6">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-(--brand-primary)">Choose engagement</p>
+                    {error && <Notice tone="rose" icon={AlertTriangle}>{error}</Notice>}
 
-                {error && (
-                    <div className="bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2">
-                        <AlertTriangle size={14} className="shrink-0" /><span>{error}</span>
-                    </div>
-                )}
-
-                {/* ── Selectors ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-(--bg-app)/50 p-4 rounded-xl border border-(--border-subtle)">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5">
-                            <User size={11}/> Employee
-                        </label>
-                        <select
-                            value={selectedEmployee}
-                            onChange={e => { setSelectedEmployee(e.target.value); setSelectedPlacement(''); }}
-                            className="w-full p-2.5 bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) rounded-lg text-xs font-bold focus:border-(--brand-primary) outline-none cursor-pointer"
-                        >
-                            <option value="">-- Select Employee --</option>
-                            {employees.map(e => (
-                                <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest flex items-center gap-1.5">
-                            <Briefcase size={11}/> Client / Placement
-                        </label>
-                        <select
-                            value={selectedPlacement}
-                            onChange={e => setSelectedPlacement(e.target.value)}
-                            disabled={!selectedEmployee}
-                            className="w-full p-2.5 bg-(--bg-surface) text-(--text-main) border border-(--border-subtle) rounded-lg text-xs font-bold focus:border-(--brand-primary) outline-none disabled:opacity-50 cursor-pointer"
-                        >
-                            <option value="">{selectedEmployee ? '-- Select Client --' : 'Select Employee First'}</option>
-                            {filteredPlacements.map(p => (
-                                <option key={p.id} value={p.id}>{p.client_name}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* ── Timeline ── */}
-                {selectedPlacement ? (
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">
-                            Timesheet Timeline
-                        </label>
-
-                        {loadingPeriods ? (
-                            <div className="p-6 text-center text-xs font-bold text-(--brand-primary) animate-pulse uppercase tracking-widest bg-(--bg-surface) border border-(--border-subtle) rounded-xl">
-                                Loading periods…
-                            </div>
-                        ) : (
-                            <div className="max-h-90 overflow-y-auto custom-scrollbar pr-1 space-y-2">
-
-                                {/* ── + button: stage the next period ── */}
-                                {nextToStage ? (
-                                    <button
-                                        onClick={handleStage}
-                                        className="w-full p-3 rounded-xl border-2 border-dashed border-(--brand-primary)/40 bg-(--brand-primary)/5 hover:bg-(--brand-primary)/10 hover:border-(--brand-primary) transition-all flex items-center gap-3 group outline-none"
-                                    >
-                                        <div className="h-9 w-9 rounded-lg bg-(--brand-primary)/10 group-hover:bg-(--brand-primary) border border-(--brand-primary)/20 flex items-center justify-center transition-all shrink-0">
-                                            <Plus size={16} className="text-(--brand-primary) group-hover:text-white transition-colors"/>
-                                        </div>
-                                        <div className="text-left flex-1 min-w-0">
-                                            <p className="text-[11px] font-bold text-(--brand-primary) truncate">
-                                                {fmtDate(nextToStage.start)} — {fmtDate(nextToStage.end)}
-                                            </p>
-                                            <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest mt-0.5">
-                                                Click to queue this period
-                                            </p>
-                                        </div>
-                                        <ChevronRight size={14} className="text-(--brand-primary) shrink-0 opacity-50 group-hover:opacity-100 transition-opacity"/>
-                                    </button>
-                                ) : (
-                                    <div className="w-full p-3 rounded-xl border border-green-500/20 bg-green-500/5 flex items-center gap-3">
-                                        <div className="h-9 w-9 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-                                            <CheckCircle size={15} className="text-green-500"/>
-                                        </div>
-                                        <div>
-                                            <p className="text-[11px] font-bold text-green-600">All periods queued or up to date</p>
-                                            <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest mt-0.5">
-                                                {stagedPeriods.length > 0 ? 'Press Create below to save' : 'No missing timesheets'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* ── Staged (queued) periods ── */}
-                                {stagedPeriods.length > 0 && (
-                                    <div className="space-y-1.5">
-                                        {[...stagedPeriods].reverse().map((p, i) => (
-                                            <div key={`staged-${i}`} className="p-3 rounded-xl border border-(--brand-primary)/30 bg-(--brand-primary)/5 flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-lg bg-(--brand-primary)/10 border border-(--brand-primary)/20 flex items-center justify-center shrink-0">
-                                                    <Clock size={13} className="text-(--brand-primary)"/>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[11px] font-bold text-(--brand-primary)">
-                                                        {fmtDate(p.start)} — {fmtDate(p.end)}
-                                                    </p>
-                                                    <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest mt-0.5">Queued</p>
-                                                </div>
-                                                <span className="text-[10px] font-bold bg-(--brand-primary)/10 text-(--brand-primary) px-2 py-0.5 rounded border border-(--brand-primary)/20 uppercase tracking-wider">
-                                                    Pending
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* ── Already created timesheets ── */}
-                                {existingTimesheets.map(t => (
-                                    <div key={t.id} className="p-3 rounded-xl border border-(--border-subtle) bg-(--bg-surface) flex items-center gap-3">
-                                        <div className="h-9 w-9 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-                                            <CheckCircle size={15} className="text-green-500"/>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-bold text-(--text-main)">
-                                                {fmtDate(t.start_date)} — {fmtDate(t.end_date)}
-                                            </p>
-                                            <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest mt-0.5">
-                                                {Number(t.total_hours) || 0} hrs
-                                            </p>
-                                        </div>
-                                        {getStatusBadge(t.status_name)}
-                                    </div>
+                    <Field label="Consultant">
+                        <div className="relative">
+                            <User size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--text-muted)" />
+                            <select
+                                value={selectedEmployee}
+                                onChange={e => { setSelectedEmployee(e.target.value); setSelectedPlacement(''); }}
+                                className="nx-input cursor-pointer pl-9"
+                            >
+                                <option value="">Select consultant…</option>
+                                {employees.map(e => (
+                                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
                                 ))}
+                            </select>
+                        </div>
+                    </Field>
 
-                                {existingTimesheets.length === 0 && stagedPeriods.length === 0 && !nextToStage && (
-                                    <div className="p-6 text-center text-xs font-bold text-(--text-muted) uppercase tracking-widest">
-                                        No timesheets for this placement yet.
+                    <Field label="Partner engagement">
+                        <div className="relative">
+                            <Rocket size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--text-muted)" />
+                            <select
+                                value={selectedPlacement}
+                                onChange={e => setSelectedPlacement(e.target.value)}
+                                disabled={!selectedEmployee}
+                                className="nx-input cursor-pointer pl-9"
+                            >
+                                <option value="">{selectedEmployee ? 'Select partner…' : 'Select a consultant first'}</option>
+                                {filteredPlacements.map(p => (
+                                    <option key={p.id} value={p.id}>{p.client_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </Field>
+
+                    <p className="text-xs leading-relaxed text-(--text-muted)">
+                        Add missing periods one at a time from the top of the timeline, then create them together.
+                    </p>
+                </aside>
+
+                <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+                    {!selectedPlacement ? (
+                        <EmptyState icon={Timer} title="Pick a consultant and partner" text="Their time log timeline will appear here." />
+                    ) : loadingPeriods ? (
+                        <LoadingState text="Loading periods…" />
+                    ) : (
+                        <div className="space-y-4">
+                            {nextToStage ? (
+                                <Node tone="brand" icon={Plus} last={stagedPeriods.length === 0 && existingTimesheets.length === 0}>
+                                    <button
+                                        type="button"
+                                        onClick={handleStage}
+                                        className="w-full rounded-[18px] border-2 border-dashed border-(--brand-primary)/40 bg-(--brand-primary)/5 px-4 py-3 text-left outline-none transition-colors hover:border-(--brand-primary)"
+                                    >
+                                        <p className="text-sm font-semibold text-(--brand-primary)">{fmtDate(nextToStage.start)} — {fmtDate(nextToStage.end)}</p>
+                                        <p className="text-xs text-(--text-muted)">Click to queue this period</p>
+                                    </button>
+                                </Node>
+                            ) : (
+                                <Node tone="green" icon={CheckCircle2} last={stagedPeriods.length === 0 && existingTimesheets.length === 0}>
+                                    <div className="rounded-[18px] border border-emerald-500/25 bg-emerald-500/5 px-4 py-3">
+                                        <p className="text-sm font-semibold text-emerald-600">All periods queued or up to date</p>
+                                        <p className="text-xs text-(--text-muted)">{stagedPeriods.length > 0 ? 'Press create below to save' : 'No missing time logs'}</p>
                                     </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-12 bg-(--bg-app)/50 rounded-xl border border-(--border-subtle) border-dashed">
-                        <Clock size={26} className="text-(--text-muted) mb-2 opacity-40"/>
-                        <p className="text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">
-                            Select an employee and client to begin
-                        </p>
-                    </div>
-                )}
+                                </Node>
+                            )}
+
+                            {[...stagedPeriods].reverse().map((p, i) => (
+                                <Node key={`staged-${i}`} tone="brand" icon={Hourglass} last={i === stagedPeriods.length - 1 && existingTimesheets.length === 0}>
+                                    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-(--brand-primary)/30 bg-(--bg-surface) px-4 py-3">
+                                        <div>
+                                            <p className="text-sm font-semibold text-(--text-main)">{fmtDate(p.start)} — {fmtDate(p.end)}</p>
+                                            <p className="text-xs text-(--text-muted)">Queued</p>
+                                        </div>
+                                        <Chip tone="brand">Queued</Chip>
+                                    </div>
+                                </Node>
+                            ))}
+
+                            {existingTimesheets.map((t, i) => (
+                                <Node key={t.id} tone="green" icon={CheckCircle2} last={i === existingTimesheets.length - 1}>
+                                    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-(--border-subtle) bg-(--bg-surface) px-4 py-3">
+                                        <div>
+                                            <p className="text-sm font-semibold text-(--text-main)">{fmtDate(t.start_date)} — {fmtDate(t.end_date)}</p>
+                                            <p className="font-mono text-xs text-(--text-muted)">{Number(t.total_hours) || 0} h</p>
+                                        </div>
+                                        {getStatusChip(t.status_name)}
+                                    </div>
+                                </Node>
+                            ))}
+
+                            {existingTimesheets.length === 0 && stagedPeriods.length === 0 && !nextToStage && (
+                                <p className="py-6 text-center text-sm text-(--text-muted)">No time logs for this engagement yet.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </BaseModal>
     );

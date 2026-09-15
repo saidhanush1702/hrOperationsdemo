@@ -104,7 +104,7 @@ const EmployeeProfileModal = ({ onClose }) => {
                                         {profile.first_name} {profile.last_name}
                                     </p>
                                     <p className="text-[10px] text-(--brand-primary) font-bold tracking-widest mt-0.5 truncate">
-                                        {profile.title || 'Employee'}
+                                        {profile.title || 'Consultant'}
                                     </p>
                                     <div className="flex items-center gap-2 mt-1.5">
                                         <span className="text-[10px] font-mono font-bold text-(--text-muted) bg-(--bg-app) px-2 py-0.5 rounded-md border border-(--border-subtle)">
@@ -141,15 +141,15 @@ const EmployeeProfileModal = ({ onClose }) => {
                             {/* Employment Details */}
                             <SectionHeader
                                 icon={Briefcase}
-                                title="Employment Details"
+                                title="Work Details"
                                 open={openSections.employment}
                                 onToggle={() => toggle('employment')}
                             />
                             {openSections.employment && (
                                 <div className="grid grid-cols-2 gap-3 px-1">
                                     <Field label="Job Title"      value={profile.title} />
-                                    <Field label="Employee Type"  value={profile.employee_type_name} />
-                                    <Field label="Employee Code"  value={profile.employee_code} />
+                                    <Field label="Consultant Type" value={profile.employee_type_name} />
+                                    <Field label="Consultant Code" value={profile.employee_code} />
                                     <Field label="Joining Date"   value={fmtDate(profile.joining_date)} />
                                     {profile.termination_date && (
                                         <Field label="Termination Date" value={fmtDate(profile.termination_date)} />
@@ -183,7 +183,7 @@ const EmployeeProfileModal = ({ onClose }) => {
                             {/* Immigration Records */}
                             <SectionHeader
                                 icon={Globe}
-                                title="Immigration Records"
+                                title="Work Authorization"
                                 open={openSections.immigration}
                                 onToggle={() => toggle('immigration')}
                                 count={immigrations.length}
@@ -191,7 +191,7 @@ const EmployeeProfileModal = ({ onClose }) => {
                             {openSections.immigration && (
                                 immigrations.length === 0 ? (
                                     <div className="px-4 py-4 text-center text-[10px] font-bold text-(--text-muted) uppercase tracking-widest">
-                                        No immigration records on file.
+                                        No work authorization records on file.
                                     </div>
                                 ) : (
                                     <div className="space-y-2 px-1">
@@ -219,7 +219,7 @@ const EmployeeProfileModal = ({ onClose }) => {
                 {/* Footer */}
                 <div className="px-4 py-3 border-t border-(--border-subtle) bg-(--bg-app)/30 shrink-0">
                     <p className="text-[10px] text-(--text-muted) text-center font-bold uppercase tracking-widest">
-                        Contact HR to update your information
+                        Contact Talent Ops to update your information
                     </p>
                 </div>
             </div>
