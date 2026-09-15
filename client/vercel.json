@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://hr-operations-api.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://hroperationsdemo.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
