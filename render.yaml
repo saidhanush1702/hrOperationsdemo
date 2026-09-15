@@ -1,0 +1,60 @@
+# Render blueprint for the API. Secrets are marked sync: false — Render asks for
+# their values when the blueprint is applied; they are never stored in the repo.
+services:
+  - type: web
+    name: hr-operations-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DB_SSL
+        value: "true"
+      - key: DB_NAME
+        value: demo_hr_operations
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ORG_ID
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM_ACCOUNTS
+        sync: false
+      - key: SMTP_FROM_HR
+        sync: false
+      - key: SMTP_REPLY_TO_ACCOUNTS
+        sync: false
+      - key: SMTP_REPLY_TO_HR
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: PORTAL_URL
+        sync: false

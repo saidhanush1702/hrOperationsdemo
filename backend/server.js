@@ -90,6 +90,10 @@ const uploadLogo = multer({
 
 const app = express();
 
+// Behind the hosting proxy (Vercel rewrite → Render), so req.ip and protocol come
+// from the forwarded headers.
+app.set('trust proxy', 1);
+
 // gzip every response above 1 KB. The invoice list is ~5.7 MB of JSON uncompressed
 // and ~522 KB gzipped (91% smaller), which is the difference between a multi-second
 // wait and a sub-second one. Mounted before the static handlers and routes so it
@@ -116,7 +120,18 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-//  ROUTES 
+//  ROUTES
+
+// Uptime ping for the host's health check and keep-alive monitor. It touches the
+// database too, so the managed MySQL service sees regular activity.
+app.get('/api/health', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ ok: true });
+    } catch {
+        res.status(503).json({ ok: false });
+    }
+});
 
 app.post('/api/auth/login', login);
 app.post('/api/auth/logout', logout);

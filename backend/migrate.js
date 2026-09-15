@@ -18,6 +18,7 @@ const pool = mysql.createPool({
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
     multipleStatements: true
 });
 
@@ -25,6 +26,9 @@ const runMigrations = async () => {
     let connection;
     try {
         connection = await pool.getConnection();
+        // Same stock SQL mode as the app pool (see config/db.js) — hosted MySQL
+        // defaults to ANSI mode, which breaks "double quoted" string literals.
+        await connection.query(`SET SESSION sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'`);
         console.log(`Connected to Database: ${process.env.DB_NAME}. Checking migrations...`);
 
         await connection.query(`
