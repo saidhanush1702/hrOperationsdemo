@@ -27,7 +27,7 @@ const initialsOf = (text) =>
 const underline = (
     <span
         aria-hidden="true"
-        className="absolute inset-x-3 -bottom-[11px] h-[2px] rounded-full"
+        className="absolute inset-x-3 -bottom-[9px] h-[2px] rounded-full"
         style={{ background: 'var(--brand-gradient)', boxShadow: '0 0 12px var(--brand-glow)' }}
     />
 );
@@ -36,10 +36,10 @@ const NavLink = ({ item, active, onClick }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`relative flex h-9 items-center gap-2 rounded-full px-3 text-[13px] font-medium outline-none transition-colors
+        className={`relative flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium outline-none transition-colors
             ${active ? 'bg-(--brand-primary)/10 text-(--text-main)' : 'text-(--text-muted) hover:bg-(--text-main)/5 hover:text-(--text-main)'}`}
     >
-        <item.icon size={16} className={active ? 'text-(--brand-primary)' : ''} />
+        <item.icon size={15} className={active ? 'text-(--brand-primary)' : ''} />
         <span className="whitespace-nowrap">{item.title}</span>
         {active && underline}
     </button>
@@ -51,7 +51,7 @@ const NavMenu = ({ section, open, active, onToggle, onPick, isActive }) => (
             type="button"
             onClick={onToggle}
             aria-expanded={open}
-            className={`relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium outline-none transition-colors
+            className={`relative flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium outline-none transition-colors
                 ${active ? 'bg-(--brand-primary)/10 text-(--text-main)' : open ? 'bg-(--text-main)/5 text-(--text-main)' : 'text-(--text-muted) hover:bg-(--text-main)/5 hover:text-(--text-main)'}`}
         >
             {section.label}
@@ -104,7 +104,7 @@ const IconButton = ({ onClick, title, children, className = '' }) => (
         onClick={onClick}
         title={title}
         aria-label={title}
-        className={`flex h-8 w-8 items-center justify-center rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 text-(--text-muted) outline-none transition-colors hover:border-(--brand-primary)/40 hover:text-(--text-main) ${className}`}
+        className={`flex h-7 w-7 items-center justify-center rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 text-(--text-muted) outline-none transition-colors hover:border-(--brand-primary)/40 hover:text-(--text-main) ${className}`}
     >
         {children}
     </button>
@@ -116,10 +116,10 @@ const ThemeSwitch = ({ isDark, onToggle, className = '' }) => (
         onClick={onToggle}
         title="Toggle Light/Dark Mode"
         aria-label="Toggle Light/Dark Mode"
-        className={`relative h-8 w-[58px] items-center rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 px-1 outline-none ${className}`}
+        className={`relative h-7 w-[52px] items-center rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 px-1 outline-none ${className}`}
     >
         <span
-            className={`absolute top-[3px] h-6 w-6 rounded-full transition-all duration-300 ${isDark ? 'left-[28px]' : 'left-[3px]'}`}
+            className={`absolute top-[2px] h-5 w-5 rounded-full transition-all duration-300 ${isDark ? 'left-[27px]' : 'left-[2px]'}`}
             style={{ background: 'var(--brand-gradient)', boxShadow: '0 4px 14px -4px var(--brand-glow)' }}
         />
         <Sun size={14} className={`relative z-10 ml-[6px] transition-colors ${isDark ? 'text-(--text-muted)' : 'text-white'}`} />
@@ -247,29 +247,29 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
                 <img
                     src={resolveFileUrl(orgLogoUrl)}
                     alt="Workspace logo"
-                    className="h-8 w-8 shrink-0 rounded-[10px] bg-white object-contain p-1 ring-1 ring-(--border-subtle)"
+                    className="h-7 w-7 shrink-0 rounded-[9px] bg-white object-contain p-0.5 ring-1 ring-(--border-subtle)"
                 />
             ) : (
-                <BrandMark size={30} className="shrink-0 drop-shadow-[0_6px_16px_var(--brand-glow)]" />
+                <BrandMark size={26} className="shrink-0 drop-shadow-[0_6px_16px_var(--brand-glow)]" />
             )}
             <span className="flex min-w-0 flex-col text-left">
-                <span className="max-w-[170px] truncate text-sm font-semibold leading-tight text-(--text-main)" style={{ fontFamily: 'var(--font-display)' }} title={orgName}>
+                <span className="max-w-[150px] truncate text-xs font-semibold leading-tight text-(--text-main)" style={{ fontFamily: 'var(--font-display)' }} title={orgName}>
                     {orgName}
                 </span>
-                <span className="font-mono text-[10px] uppercase leading-tight tracking-[0.18em] text-(--text-muted)">HR Operations</span>
+                <span className="font-mono text-[9px] uppercase leading-tight tracking-[0.16em] text-(--text-muted)">HR Operations</span>
             </span>
         </>
     );
 
     return (
-        <header ref={barRef} className="relative z-40 h-14 shrink-0 border-b border-(--border-subtle) bg-(--bg-sidebar) backdrop-blur-xl">
+        <header ref={barRef} className="relative z-40 h-12 shrink-0 border-b border-(--border-subtle) bg-(--bg-sidebar) backdrop-blur-xl">
             <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 bottom-0 h-px opacity-70"
                 style={{ background: 'linear-gradient(90deg, transparent, var(--brand-primary), var(--brand-secondary), transparent)' }}
             />
 
-            <div className="flex h-full items-center gap-2 px-3 sm:gap-2.5 sm:px-4 lg:px-5">
+            <div className="flex h-full items-center gap-1.5 px-2.5 sm:gap-2 sm:px-3.5 lg:px-4">
                 {/* Brand */}
                 <button
                     type="button"
@@ -279,7 +279,7 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
                     {brand}
                 </button>
 
-                <span className="mx-2 hidden h-7 w-px bg-(--border-subtle) lg:block" />
+                <span className="mx-1.5 hidden h-6 w-px bg-(--border-subtle) lg:block" />
 
                 {/* Desktop navigation */}
                 <nav className="hidden h-full min-w-0 flex-1 items-center gap-1 lg:flex">
@@ -305,14 +305,14 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
 
                 {/* Right cluster */}
                 <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-                    <div className="hidden h-8 items-center gap-2 rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 px-2.5 md:flex lg:hidden xl:flex">
+                    <div className="hidden h-7 items-center gap-1.5 rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 px-2 md:flex lg:hidden xl:flex">
                         <span className="relative flex h-2 w-2">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                         </span>
-                        <span className="font-mono text-xs tabular-nums text-(--text-main)">{easternTime.date}</span>
+                        <span className="font-mono text-[11px] tabular-nums text-(--text-main)">{easternTime.date}</span>
                         <span className="h-3.5 w-px bg-(--border-subtle)" />
-                        <span className="font-mono text-xs tabular-nums text-(--text-main)">{easternTime.time}</span>
+                        <span className="font-mono text-[11px] tabular-nums text-(--text-main)">{easternTime.time}</span>
                         <span className="font-mono text-[10px] text-(--text-muted)">EST</span>
                     </div>
 
@@ -328,14 +328,14 @@ const CommandBar = ({ userName, userRole, easternTime, isDark, onToggleTheme, is
                             type="button"
                             onClick={() => setOpenMenu(openMenu === 'profile' ? null : 'profile')}
                             aria-expanded={openMenu === 'profile'}
-                            className="flex h-9 items-center gap-2 rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 p-1 outline-none transition-colors hover:border-(--brand-primary)/40 xl:pr-3"
+                            className="flex h-8 items-center gap-1.5 rounded-full border border-(--border-subtle) bg-(--bg-surface)/70 p-0.5 outline-none transition-colors hover:border-(--brand-primary)/40 xl:pr-3"
                         >
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold text-white" style={{ background: 'var(--brand-gradient)' }}>
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white" style={{ background: 'var(--brand-gradient)' }}>
                                 {initialsOf(displayName)}
                             </span>
                             <span className="hidden flex-col text-left leading-tight xl:flex">
-                                <span className="max-w-[120px] truncate text-xs font-semibold text-(--text-main)" title={displayName}>{displayName}</span>
-                                <span className="text-[10px] text-(--text-muted)">{roleLabel}</span>
+                                <span className="max-w-[110px] truncate text-[11px] font-semibold text-(--text-main)" title={displayName}>{displayName}</span>
+                                <span className="text-[9px] text-(--text-muted)">{roleLabel}</span>
                             </span>
                         </button>
 
