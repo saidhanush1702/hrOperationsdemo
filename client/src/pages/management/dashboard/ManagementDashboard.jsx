@@ -217,7 +217,7 @@ const ManagementDashboard = () => {
 
     if (loading) {
         return (
-            <div className="mx-auto max-w-7xl space-y-6 p-1 sm:p-2">
+            <div className="mx-auto max-w-[1800px] space-y-4">
                 <div className="nx-shimmer h-44 rounded-[28px]" />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {Array.from({ length: 4 }).map((_, i) => <div key={i} className="nx-shimmer h-40 rounded-[22px]" />)}
@@ -229,7 +229,7 @@ const ManagementDashboard = () => {
     const { todayBirthdays, todayAnniversaries, immigrationExpiring } = data;
 
     return (
-        <div className="mx-auto max-w-7xl space-y-6 p-1 sm:p-2">
+        <div className="mx-auto max-w-[1800px] space-y-4">
 
             {/* Hero */}
             <section

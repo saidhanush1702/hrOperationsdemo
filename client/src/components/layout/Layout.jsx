@@ -97,9 +97,9 @@ const Layout = ({ children }) => {
                 onLogout={handleLogout}
             />
 
-            {/* Scrollable Page Content — the bar above is exactly 4rem tall, which
-                the pages' full-height layouts (calc(100vh - 4rem)) rely on. */}
-            <main className="relative flex-1 w-full overflow-x-hidden overflow-y-auto p-4 lg:p-8">
+            {/* Scrollable Page Content — the bar above is exactly 3.5rem tall, which
+                any full-height page layout would measure against. */}
+            <main className="relative flex-1 w-full overflow-x-hidden overflow-y-auto p-3 sm:p-4 lg:p-5">
                 {children}
             </main>
         </div>

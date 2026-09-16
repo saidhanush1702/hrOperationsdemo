@@ -170,7 +170,7 @@ const InvoiceSettings = () => {
     );
 
     return (
-        <div className="mx-auto max-w-[1600px] space-y-6">
+        <div className="mx-auto max-w-[1800px] space-y-4">
             <PageHero
                 icon={SlidersHorizontal}
                 eyebrow="Money"

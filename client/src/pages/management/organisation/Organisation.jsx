@@ -154,7 +154,7 @@ const Organisation = () => {
     const team_ = TEAM[activeTab];
 
     return (
-        <div className="mx-auto max-w-[1400px] space-y-6">
+        <div className="mx-auto max-w-[1600px] space-y-4">
             <PageHero
                 icon={Settings2}
                 eyebrow="Workspace"

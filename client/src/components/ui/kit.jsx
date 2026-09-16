@@ -60,7 +60,7 @@ export const Btn = ({ variant = 'ghost', icon: Icon, size = 'md', className, chi
 // ─── Page scaffolding ─────────────────────────────────────────────────────────
 export const PageHero = ({ icon: Icon, eyebrow, title, description, actions, children }) => (
     <section
-        className="relative overflow-hidden rounded-[30px] border border-(--border-subtle) px-5 py-6 sm:px-8 sm:py-7"
+        className="relative overflow-hidden rounded-[24px] border border-(--border-subtle) px-4 py-4 sm:px-6 sm:py-5"
         style={{ background: 'linear-gradient(125deg, color-mix(in srgb, var(--brand-primary) 13%, var(--bg-surface)) 0%, var(--bg-surface) 52%, color-mix(in srgb, var(--brand-secondary) 10%, var(--bg-surface)) 100%)' }}
     >
         <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full border border-(--brand-primary)/15" />
@@ -70,26 +70,26 @@ export const PageHero = ({ icon: Icon, eyebrow, title, description, actions, chi
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
                 {Icon && (
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] text-white" style={{ background: 'var(--brand-gradient)', boxShadow: '0 14px 30px -12px var(--brand-glow)' }}>
-                        <Icon size={22} />
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-white" style={{ background: 'var(--brand-gradient)', boxShadow: '0 14px 30px -12px var(--brand-glow)' }}>
+                        <Icon size={19} />
                     </span>
                 )}
                 <div className="min-w-0">
                     {eyebrow && <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-(--brand-primary)">{eyebrow}</p>}
-                    <h1 className="mt-1 text-2xl font-semibold text-(--text-main) sm:text-3xl">{title}</h1>
+                    <h1 className="mt-0.5 text-xl font-semibold text-(--text-main) sm:text-2xl">{title}</h1>
                     {description && <p className="mt-1.5 max-w-2xl text-sm text-(--text-muted)">{description}</p>}
                 </div>
             </div>
             {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
 
-        {children && <div className="relative mt-6">{children}</div>}
+        {children && <div className="relative mt-4">{children}</div>}
     </section>
 );
 
 /** Horizontal rail of stat tiles. Tiles with onClick act as filters. */
 export const StatRail = ({ children }) => (
-    <div className="hide-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 pb-1">{children}</div>
+    <div className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">{children}</div>
 );
 
 export const StatTile = ({ label, value, hint, icon: Icon, active = false, onClick }) => (
@@ -98,7 +98,7 @@ export const StatTile = ({ label, value, hint, icon: Icon, active = false, onCli
         onClick={onClick}
         disabled={!onClick}
         className={cx(
-            'group relative flex min-w-[150px] flex-1 flex-col items-start gap-0.5 overflow-hidden rounded-[18px] border px-4 py-3 text-left outline-none transition-all duration-300 disabled:cursor-default',
+            'group relative flex min-w-[118px] flex-1 flex-col items-start gap-0.5 overflow-hidden rounded-[16px] border px-3 py-2 text-left outline-none transition-all duration-300 disabled:cursor-default',
             active ? 'border-transparent' : 'border-(--border-subtle) bg-(--bg-surface)/80 backdrop-blur enabled:hover:-translate-y-0.5 enabled:hover:border-(--brand-primary)/40',
         )}
         style={active ? { background: 'var(--brand-gradient)', boxShadow: '0 16px 34px -16px var(--brand-glow)' } : undefined}
@@ -107,14 +107,14 @@ export const StatTile = ({ label, value, hint, icon: Icon, active = false, onCli
             {Icon && <Icon size={13} />}
             {label}
         </span>
-        <span className={cx('text-2xl font-semibold', active ? 'text-white' : 'text-(--text-main)')} style={display}>{value}</span>
+        <span className={cx('text-lg font-semibold', active ? 'text-white' : 'text-(--text-main)')} style={display}>{value}</span>
         {hint && <span className={cx('text-[11px]', active ? 'text-white/75' : 'text-(--text-muted)')}>{hint}</span>}
     </button>
 );
 
 /** Two-column work area: a filter dock on the left, results on the right. */
 export const Workbench = ({ dock, children }) => (
-    <div className="grid gap-5 lg:grid-cols-[272px_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:grid-cols-[212px_minmax(0,1fr)] xl:grid-cols-[236px_minmax(0,1fr)]">
         <aside className="min-w-0 lg:sticky lg:top-0 lg:self-start">{dock}</aside>
         <div className="min-w-0 space-y-4">{children}</div>
     </div>
@@ -123,11 +123,11 @@ export const Workbench = ({ dock, children }) => (
 export const FilterDock = ({ title = 'Refine', activeCount = 0, onReset, children }) => {
     const [open, setOpen] = useState(false);
     return (
-        <div className="rounded-[24px] border border-(--border-subtle) bg-(--bg-surface)/85 backdrop-blur">
+        <div className="rounded-[18px] border border-(--border-subtle) bg-(--bg-surface)/85 backdrop-blur">
             <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
-                className="flex w-full items-center justify-between gap-2 px-5 py-4 text-left outline-none lg:cursor-default"
+                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left outline-none lg:cursor-default"
             >
                 <span className="flex items-center gap-2 text-sm font-semibold text-(--text-main)">
                     <SlidersHorizontal size={15} className="text-(--brand-primary)" />
@@ -138,7 +138,7 @@ export const FilterDock = ({ title = 'Refine', activeCount = 0, onReset, childre
                 </span>
                 <ChevronDown size={16} className={cx('text-(--text-muted) transition-transform lg:hidden', open && 'rotate-180')} />
             </button>
-            <div className={cx('space-y-5 border-t border-(--border-subtle) px-5 py-5', open ? 'block' : 'hidden', 'lg:block')}>
+            <div className={cx('space-y-4 border-t border-(--border-subtle) px-4 py-4', open ? 'block' : 'hidden', 'lg:block')}>
                 {children}
                 {onReset && activeCount > 0 && (
                     <button
@@ -229,9 +229,9 @@ export const SelectInput = ({ value, onChange, children, className, ...rest }) =
 
 // ─── Content blocks ───────────────────────────────────────────────────────────
 export const Panel = ({ title, icon: Icon, subtitle, actions, children, className, bodyClassName }) => (
-    <section className={cx('min-w-0 rounded-[24px] border border-(--border-subtle) bg-(--bg-surface)', className)}>
+    <section className={cx('min-w-0 rounded-[20px] border border-(--border-subtle) bg-(--bg-surface)', className)}>
         {(title || actions) && (
-            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-(--border-subtle) px-5 py-4">
+            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-(--border-subtle) px-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                     {Icon && (
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-(--brand-primary)/10 text-(--brand-primary)">
@@ -246,7 +246,7 @@ export const Panel = ({ title, icon: Icon, subtitle, actions, children, classNam
                 {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
             </header>
         )}
-        <div className={cx('p-5', bodyClassName)}>{children}</div>
+        <div className={cx('p-4', bodyClassName)}>{children}</div>
     </section>
 );
 
@@ -275,7 +275,7 @@ export const Avatar = ({ name = '', size = 40, className, ring = false }) => {
 };
 
 export const EmptyState = ({ icon: Icon = Inbox, title = 'Nothing here yet', text, action }) => (
-    <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center">
         <span className="relative flex h-14 w-14 items-center justify-center rounded-full border border-(--border-subtle) text-(--text-muted)">
             <span className="absolute inset-0 rounded-full opacity-20 blur-md" style={{ background: 'var(--brand-gradient)' }} />
             <Icon size={22} className="relative" />
@@ -289,7 +289,7 @@ export const EmptyState = ({ icon: Icon = Inbox, title = 'Nothing here yet', tex
 );
 
 export const LoadingState = ({ text = 'Loading…' }) => (
-    <div className="flex flex-col items-center justify-center gap-3 py-14 text-(--text-muted)">
+    <div className="flex flex-col items-center justify-center gap-3 py-10 text-(--text-muted)">
         <Loader2 size={22} className="animate-spin text-(--brand-primary)" />
         <p className="text-sm">{text}</p>
     </div>
@@ -305,7 +305,7 @@ export const RecordCard = ({ onClick, children, className, muted = false, title 
         onClick={onClick}
         title={title}
         className={cx(
-            'group relative overflow-hidden rounded-[20px] border border-(--border-subtle) bg-(--bg-surface) px-4 py-3.5 transition-all duration-200 sm:px-5',
+            'group relative overflow-hidden rounded-[16px] border border-(--border-subtle) bg-(--bg-surface) px-3.5 py-3 transition-all duration-200 sm:px-4',
             onClick && 'cursor-pointer hover:-translate-y-0.5 hover:border-(--brand-primary)/45 hover:shadow-[0_18px_40px_-26px_var(--brand-glow)]',
             muted && 'opacity-70',
             className,
@@ -322,8 +322,8 @@ export const RecordCard = ({ onClick, children, className, muted = false, title 
  * and a section navigator; the selected section renders on the right.
  */
 export const DetailLayout = ({ aside, sections, active, onSelect, children }) => (
-    <div className="grid min-h-full lg:grid-cols-[310px_minmax(0,1fr)]">
-        <aside className="min-w-0 border-b border-(--border-subtle) bg-(--bg-app)/40 p-5 lg:border-b-0 lg:border-r lg:p-6">
+    <div className="grid min-h-full lg:grid-cols-[252px_minmax(0,1fr)]">
+        <aside className="min-w-0 border-b border-(--border-subtle) bg-(--bg-app)/40 p-4 lg:border-b-0 lg:border-r lg:p-5">
             {aside}
             {sections && sections.length > 0 && (
                 <nav className="hide-scrollbar mt-6 flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
@@ -352,12 +352,12 @@ export const DetailLayout = ({ aside, sections, active, onSelect, children }) =>
                 </nav>
             )}
         </aside>
-        <div className="min-w-0 p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="min-w-0 p-4 sm:p-5 lg:p-6">{children}</div>
     </div>
 );
 
 export const SectionTitle = ({ icon: Icon, title, subtitle, actions }) => (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-3">
             {Icon && (
                 <span className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-(--brand-primary)/10 text-(--brand-primary)">

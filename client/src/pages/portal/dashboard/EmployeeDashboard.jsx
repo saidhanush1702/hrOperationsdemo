@@ -72,7 +72,7 @@ const EmployeeDashboard = () => {
     const immigrations = profile?.immigrations || [];
 
     return (
-        <div className="mx-auto max-w-[1400px] space-y-6">
+        <div className="mx-auto max-w-[1600px] space-y-4">
             <PageHero
                 icon={Gauge}
                 eyebrow="My work"

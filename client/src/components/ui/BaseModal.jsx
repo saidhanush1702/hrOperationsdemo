@@ -29,20 +29,20 @@ const BaseModal = ({
             >
                 {/* HEADER */}
                 <header
-                    className="relative shrink-0 border-b border-(--border-subtle) px-4 py-4 sm:px-8 sm:py-5"
+                    className="relative shrink-0 border-b border-(--border-subtle) px-4 py-3 sm:px-6 sm:py-3.5"
                     style={{ background: 'linear-gradient(110deg, color-mix(in srgb, var(--brand-primary) 10%, var(--bg-surface)), var(--bg-surface) 60%)' }}
                 >
                     <div className="flex items-center gap-3 sm:gap-4">
                         {icon && (
                             <div
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] text-white sm:h-11 sm:w-11"
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-white sm:h-10 sm:w-10"
                                 style={{ background: 'var(--brand-gradient)', boxShadow: '0 10px 28px -10px var(--brand-glow)' }}
                             >
                                 {icon}
                             </div>
                         )}
                         <div className="min-w-0 flex-1">
-                            <h2 className="truncate text-lg font-semibold leading-tight text-(--text-main) sm:text-2xl" style={{ fontFamily: 'var(--font-display)' }}>
+                            <h2 className="truncate text-base font-semibold leading-tight text-(--text-main) sm:text-xl" style={{ fontFamily: 'var(--font-display)' }}>
                                 {title}
                             </h2>
                             {subtitle && (
@@ -77,7 +77,7 @@ const BaseModal = ({
 
                 {/* FOOTER */}
                 {footer && (
-                    <div className="flex shrink-0 items-center justify-between border-t border-(--border-subtle) bg-(--bg-app)/60 px-4 py-3 backdrop-blur transition-colors duration-300 sm:px-8 sm:py-4">
+                    <div className="flex shrink-0 items-center justify-between border-t border-(--border-subtle) bg-(--bg-app)/60 px-4 py-2.5 backdrop-blur transition-colors duration-300 sm:px-6 sm:py-3">
                         {footer}
                     </div>
                 )}

@@ -112,7 +112,7 @@ const EmployeeBalanceSheet = () => {
     const active = sections.find(s => s.key === sectionKey) || sections[0];
 
     return (
-        <div className="mx-auto max-w-[1400px] space-y-6">
+        <div className="mx-auto max-w-[1600px] space-y-4">
             <PageHero
                 icon={Wallet}
                 eyebrow="My work"
