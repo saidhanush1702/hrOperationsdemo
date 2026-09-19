@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { parseDateStr } from './dateUtils.js';
 
@@ -18,21 +20,94 @@ const FROM_ACCOUNTS     = process.env.SMTP_FROM_ACCOUNTS || process.env.SMTP_USE
 const REPLY_TO_HR       = process.env.SMTP_REPLY_TO_HR || FROM_HR;
 const REPLY_TO_ACCOUNTS = process.env.SMTP_REPLY_TO_ACCOUNTS || FROM_ACCOUNTS;
 
-const createTransporter = () => {
+// ─── Delivery ────────────────────────────────────────────────────────────────
+// Every sender below builds a nodemailer-style message and hands it to
+// createTransporter().sendMail(). Two transports sit behind that:
+//   • BREVO_API_KEY set → Brevo's HTTPS API. Hosts such as Render's free tier block
+//     outbound SMTP ports outright, so this is the production path.
+//   • otherwise → SMTP (local development). The host is resolved to IPv4 first,
+//     because containers without an IPv6 route fail with ENETUNREACH otherwise.
+const parseAddress = (value) => {
+    const match = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(String(value || ''));
+    return match
+        ? { name: match[1].trim() || undefined, email: match[2].trim() }
+        : { email: String(value).trim() };
+};
+
+const toAddressList = (value) =>
+    (Array.isArray(value) ? value : String(value || '').split(','))
+        .map(v => String(v).trim())
+        .filter(Boolean)
+        .map(parseAddress);
+
+const attachmentToBase64 = async (att) => {
+    if (att.content) return Buffer.from(att.content).toString('base64');
+    if (/^https?:\/\//i.test(att.path)) {
+        const res = await fetch(att.path);
+        if (!res.ok) throw new Error(`Attachment download failed (${res.status})`);
+        return Buffer.from(await res.arrayBuffer()).toString('base64');
+    }
+    return (await fs.promises.readFile(att.path)).toString('base64');
+};
+
+const sendViaBrevo = async (mail) => {
+    const payload = {
+        sender:      parseAddress(mail.from),
+        to:          toAddressList(mail.to),
+        subject:     mail.subject,
+        htmlContent: mail.html,
+    };
+    if (mail.text)    payload.textContent = mail.text;
+    if (mail.replyTo) payload.replyTo = parseAddress(mail.replyTo);
+    const cc  = toAddressList(mail.cc);
+    const bcc = toAddressList(mail.bcc);
+    if (cc.length)  payload.cc = cc;
+    if (bcc.length) payload.bcc = bcc;
+    if (mail.attachments?.length) {
+        payload.attachment = await Promise.all(mail.attachments.map(async (a) => ({
+            name: a.filename,
+            content: await attachmentToBase64(a),
+        })));
+    }
+
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': process.env.BREVO_API_KEY, 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) throw new Error(`Brevo API ${res.status}: ${await res.text()}`);
+    return res.json();
+};
+
+const sendViaSmtp = async (mail) => {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
         console.error(" ENV ERROR: SMTP_USER or SMTP_PASS is undefined.");
         throw new Error("SMTP Credentials missing. Check your .env file.");
     }
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
+    const host = process.env.SMTP_HOST;
+    const [ipv4] = await dns.promises.resolve4(host).catch(() => []);
+    const transporter = nodemailer.createTransport({
+        host: ipv4 || host,
         port: parseInt(process.env.SMTP_PORT) || 587,
         secure: false,
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
+        // The certificate names the host, not the IP address connected to.
+        tls: { servername: host },
+        // Fail fast instead of hanging a request for minutes on a blocked port.
+        connectionTimeout: 15000,
+        greetingTimeout: 10000,
+        socketTimeout: 30000,
     });
+    return transporter.sendMail(mail);
 };
+
+const createTransporter = () => ({
+    sendMail: (mail) => (process.env.BREVO_API_KEY ? sendViaBrevo(mail) : sendViaSmtp(mail)),
+});
 
 export const sendEmployeeWelcomeEmail = async (toEmail, tempPassword) => {
     const transporter = createTransporter();

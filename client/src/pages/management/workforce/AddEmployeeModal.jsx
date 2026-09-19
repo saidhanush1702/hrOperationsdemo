@@ -250,7 +250,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onRefresh }) => {
         setLoading(true);
         setSubmitError('');
         try {
-            await managementAPI.addEmployee(formData);
+            const res = await managementAPI.addEmployee(formData);
+            // The profile is saved even when the welcome email fails; say so.
+            if (res.data?.emailSent === false) alert(res.data.message);
             onRefresh();
             onClose();
         } catch (err) {

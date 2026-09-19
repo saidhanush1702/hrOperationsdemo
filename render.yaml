@@ -54,6 +54,8 @@ services:
         sync: false
       - key: SMTP_REPLY_TO_HR
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
       - key: CLIENT_ORIGIN
         sync: false
       - key: PORTAL_URL

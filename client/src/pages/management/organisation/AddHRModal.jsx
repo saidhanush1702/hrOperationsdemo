@@ -32,7 +32,9 @@ const AddHRModal = ({ isOpen, onClose, onRefresh, role = 'HR' }) => {
 
         setLoading(true);
         try {
-            await managementAPI.createTeamMember(formData);
+            const res = await managementAPI.createTeamMember(formData);
+            // The account is saved even when the welcome email fails; say so.
+            if (res.data?.emailSent === false) alert(res.data.message);
             onRefresh();
             onClose();
         } catch (err) {

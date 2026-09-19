@@ -31,7 +31,9 @@ const RegisterOrgModal = ({ isOpen, onClose, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await api.post('/api/super-admin/create-org', formData);
+            const res = await api.post('/api/super-admin/create-org', formData);
+            // The workspace is saved even when the welcome email fails; say so.
+            if (res.data?.emailSent === false) alert(res.data.message);
             onRefresh();
             onClose();
             setFormData(EMPTY_FORM);

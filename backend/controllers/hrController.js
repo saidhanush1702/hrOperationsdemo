@@ -64,16 +64,24 @@ export const createTeamMember = async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
         `, [userId, req.user.orgId, firstName, lastName, email, encryptedPw, role, creatorId]);
         
-        // Optionally send a welcome email containing the initial password
+        await connection.commit();
+        logAction({ orgId: req.user.orgId, module: 'organisation', action: 'Added Team Member', entityType: 'User', entityName: `${firstName} ${lastName}`, performedBy: req.user.id, performedByRole: req.user.role, description: `Added ${role} "${firstName} ${lastName}" (${email})` }).catch(() => {});
+
+        // Welcome email with the initial password — sent after the commit and
+        // best-effort, so the account is kept even if mail is down.
+        let emailSent = true;
         try {
              await sendWelcomeEmail(email, password, `${role.replace('_', ' ')} Portal`);
         } catch (mailError) {
-             console.error("Failed to send welcome email, but user was created.", mailError);
+             emailSent = false;
+             console.error("Failed to send welcome email, but user was created.", mailError.message);
         }
-
-        await connection.commit();
-        logAction({ orgId: req.user.orgId, module: 'organisation', action: 'Added Team Member', entityType: 'User', entityName: `${firstName} ${lastName}`, performedBy: req.user.id, performedByRole: req.user.role, description: `Added ${role} "${firstName} ${lastName}" (${email})` }).catch(() => {});
-        res.status(201).json({ message: `${role.replace('_', ' ')} created successfully.` });
+        res.status(201).json({
+            emailSent,
+            message: emailSent
+                ? `${role.replace('_', ' ')} created successfully.`
+                : `${role.replace('_', ' ')} created, but the welcome email could not be sent. Share the login details directly.`,
+        });
     } catch (error) {
         await connection.rollback();
         console.error("CREATE TEAM MEMBER ERROR:", error);

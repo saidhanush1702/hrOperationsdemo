@@ -65,11 +65,24 @@ export const addEmployee = async (req, res) => {
             );
         }
 
-        await sendEmployeeWelcomeEmail(auth.email, auth.password);
-
         await connection.commit();
         logAction({ orgId, module: 'workforce', action: 'Added Employee', entityType: 'Employee', entityId: employeeId, entityName: `${profile.first_name} ${profile.last_name}`, performedBy: creatorId, performedByRole: req.user.role, description: `Added employee ${profile.first_name} ${profile.last_name} (${profile.employee_code})` }).catch(() => {});
-        res.status(201).json({ message: "Full employee profile created." });
+
+        // The profile is saved before the welcome email goes out, so a mail outage
+        // cannot roll back a completed onboarding.
+        let emailSent = true;
+        try {
+            await sendEmployeeWelcomeEmail(auth.email, auth.password);
+        } catch (mailError) {
+            emailSent = false;
+            console.error("Employee welcome email failed (profile kept):", mailError.message);
+        }
+        res.status(201).json({
+            emailSent,
+            message: emailSent
+                ? "Full employee profile created."
+                : "Profile created, but the welcome email could not be sent. Share the login details with the consultant directly.",
+        });
     } catch (error) {
         await connection.rollback();
         if (error.code === 'ER_DUP_ENTRY') {

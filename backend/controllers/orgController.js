@@ -45,14 +45,25 @@ export const createOrganization = async (req, res) => {
             [userId, orgId, admin_email, toPersonName(admin_first_name), toPersonName(admin_last_name), encryptedPw, superAdminId, superAdminId]
         );
 
-        console.log(" Step 3: Attempting to send welcome email...");
-        await sendWelcomeEmail(admin_email, admin_password, name);
-
         await connection.commit();
-        console.log(" Success: Transaction committed and email sent.");
+        console.log(" Success: Organization and admin committed.");
 
-        res.status(201).json({ 
-            message: "Organization created successfully and credentials have been emailed." 
+        // The workspace exists whatever happens to the email — a mail outage must
+        // not undo onboarding. The response tells the platform owner either way.
+        let emailSent = true;
+        try {
+            console.log(" Step 3: Sending welcome email...");
+            await sendWelcomeEmail(admin_email, admin_password, name);
+        } catch (mailError) {
+            emailSent = false;
+            console.error(" Welcome email failed (organization kept):", mailError.message);
+        }
+
+        res.status(201).json({
+            emailSent,
+            message: emailSent
+                ? "Organization created successfully and credentials have been emailed."
+                : "Organization created, but the welcome email could not be sent. Share the admin's login details with them directly.",
         });
 
     } catch (error) {
