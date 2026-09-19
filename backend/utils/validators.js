@@ -16,6 +16,8 @@ export const orgSchema = Joi.object({
         'string.min': 'Password must be at least 6 characters.',
         'any.required': 'Admin password is required.'
     }),
+    // Emailing the owner their login details is optional; off unless asked for.
+    send_welcome_email: Joi.boolean().default(false),
     domain: Joi.string().hostname().allow('', null),
     address: Joi.string().max(255).allow('', null)
 });

@@ -15,7 +15,7 @@ export const createOrganization = async (req, res) => {
         return res.status(400).json({ message: error.details[0].message });
     }
 
-    const { name, admin_email, admin_first_name, admin_last_name, admin_password, domain, address } = value;
+    const { name, admin_email, admin_first_name, admin_last_name, admin_password, domain, address, send_welcome_email } = value;
     const superAdminId = req.user.id;
 
     const connection = await pool.getConnection();
@@ -48,22 +48,28 @@ export const createOrganization = async (req, res) => {
         await connection.commit();
         console.log(" Success: Organization and admin committed.");
 
-        // The workspace exists whatever happens to the email — a mail outage must
-        // not undo onboarding. The response tells the platform owner either way.
-        let emailSent = true;
-        try {
-            console.log(" Step 3: Sending welcome email...");
-            await sendWelcomeEmail(admin_email, admin_password, name);
-        } catch (mailError) {
-            emailSent = false;
-            console.error(" Welcome email failed (organization kept):", mailError.message);
+        // Emailing the login details is optional — the platform owner set the
+        // password and can share it directly. When requested it is best-effort:
+        // the workspace already exists, so a mail outage cannot undo onboarding.
+        let emailSent = null;
+        if (send_welcome_email) {
+            try {
+                console.log(" Step 3: Sending welcome email...");
+                await sendWelcomeEmail(admin_email, admin_password, name);
+                emailSent = true;
+            } catch (mailError) {
+                emailSent = false;
+                console.error(" Welcome email failed (organization kept):", mailError.message);
+            }
         }
 
         res.status(201).json({
             emailSent,
-            message: emailSent
+            message: emailSent === true
                 ? "Organization created successfully and credentials have been emailed."
-                : "Organization created, but the welcome email could not be sent. Share the admin's login details with them directly.",
+                : emailSent === false
+                    ? "Organization created, but the welcome email could not be sent. Share the admin's login details with them directly."
+                    : "Organization created successfully.",
         });
 
     } catch (error) {

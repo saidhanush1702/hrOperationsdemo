@@ -4,7 +4,7 @@ import BaseModal from '../../components/ui/BaseModal';
 import api from '../../api/axios';
 import { Field, Btn } from '../../components/ui/kit';
 
-const EMPTY_FORM = { name: '', admin_first_name: '', admin_last_name: '', admin_email: '', admin_password: '', domain: '', address: '' };
+const EMPTY_FORM = { name: '', admin_first_name: '', admin_last_name: '', admin_email: '', admin_password: '', domain: '', address: '', send_welcome_email: false };
 
 const Block = ({ n, icon: Icon, title, text, children }) => (
     <div className="grid gap-5 rounded-[24px] border border-(--border-subtle) bg-(--bg-surface) p-5 sm:p-6 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -102,6 +102,18 @@ const RegisterOrgModal = ({ isOpen, onClose, onRefresh }) => {
                             </button>
                         </div>
                     </Field>
+                    <label className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-(--border-subtle) px-4 py-3 sm:col-span-2">
+                        <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4 cursor-pointer"
+                            checked={formData.send_welcome_email}
+                            onChange={e => setFormData(prev => ({ ...prev, send_welcome_email: e.target.checked }))}
+                        />
+                        <span>
+                            <span className="block text-sm font-medium text-(--text-main)">Email the login details to the owner</span>
+                            <span className="block text-xs text-(--text-muted)">Optional. The workspace is created either way — leave this off and share the password yourself.</span>
+                        </span>
+                    </label>
                 </Block>
             </form>
         </BaseModal>
